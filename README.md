@@ -178,17 +178,17 @@ Without compression, total input grows **quadratically**, because every command'
 
 ```mermaid
 flowchart LR
-    A[Agent runs a command] --> B[Raw output<br/>e.g. 2,725 tokens]
-    B --> H{{PostToolUse hook}}
-    H -->|small output or '# raw'| P[Passed through unchanged]
-    H --> F[Command filter<br/>jest · pytest · npm · tsc · git · docker · ls]
-    F --> G[Generic squeeze<br/>ANSI · progress bars · repeated lines · smart truncate]
-    G --> S{Signal check<br/>every error / fail line kept?}
-    S -->|no| X[Fall back to safer path]
-    S -->|yes| C[Compressed output<br/>192 tokens + raw-log path]
-    B -.->|full copy| R[(~/.tokenarmy/raw/)]
-    C --> M[Model context]
-    C -.-> L[(gain ledger)]
+    A["Agent runs a command"] --> B["Raw output<br/>e.g. 2,725 tokens"]
+    B --> H{{"PostToolUse hook"}}
+    H -->|"small output or opted out"| P["Passed through unchanged"]
+    H --> F["Command filter<br/>jest · pytest · npm · tsc · git · docker · ls"]
+    F --> G["Generic squeeze<br/>ANSI · progress bars · repeated lines · smart truncate"]
+    G --> S{"Signal check<br/>every error line kept?"}
+    S -->|"no"| X["Fall back to safer path"]
+    S -->|"yes"| C["Compressed output<br/>192 tokens + raw-log path"]
+    B -.->|"full copy"| R[("~/.tokenarmy/raw/")]
+    C --> M["Model context"]
+    C -.-> L[("gain ledger")]
 ```
 
 Five layers, each targeting a different place tokens leak:
