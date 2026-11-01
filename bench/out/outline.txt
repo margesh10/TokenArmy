@@ -1,0 +1,22 @@
+  15| function chunk(text, { source = '', maxTokens = 400 } = {}) { … }
+  24|   const flush = (end) => { … }
+  44| function tokenize(s) { … }
+  53| function bm25(chunks, query, { k1 = 1.4, b = 0.75 } = {}) { … }
+  65|     for (const t of q) { … }
+  76| function jaccard(a, b) { … }
+  84| function mmr(scored, { lambda = 0.7, k = 50 } = {}) { … }
+  88|   while (pool.length && picked.length < k) { … }
+  94|       if (val > bestVal) { … }
+ 107| function pack(chunks, query, budget = 4000) { … }
+ 111|   for (const c of ranked) { … }
+ 127| function outline(code, source = '') { … }
+ 150| function resolveImport(fromFile, spec) { … }
+ 158|   for (const e of EXTS) { … }
+ 165| function buildGraph(files) { … }
+ 167|   for (const f of files) { … }
+ 175|     for (const re of IMPORT_RES) { … }
+ 187| function neighbourhood(graph, seed, maxHops = 2) { … }
+ 192|   while (q.length) { … }
+ 207| function walk(dir, exts, out = [], limit = 5000) { … }
+ 214|   for (const e of entries) { … }
+ 225| module.exports = { chunk, tokenize, bm25, mmr, pack, outline, buildGraph, neighbourhood, walk, jaccard, IGNORE_DIRS };

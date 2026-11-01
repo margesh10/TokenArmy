@@ -1,0 +1,5 @@
+npm WARN deprecated inflight@1.0.6: This module is not supported, and leaks memory.
+npm WARN deprecated glob@7.2.3: Glob versions prior to v9 are no longer supported
+added 412 packages, and audited 413 packages in 21s
+98 packages are looking for funding
+2 moderate severity vulnerabilities

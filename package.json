@@ -16,7 +16,8 @@
     "node": ">=18"
   },
   "scripts": {
-    "test": "node --test test/"
+    "test": "node --test test/",
+    "bench": "node bench/run.js"
   },
   "keywords": ["llm", "tokens", "claude-code", "context-engineering", "rag", "prompt-compression", "ai-agents", "codex", "cost"]
 }

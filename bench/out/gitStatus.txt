@@ -1,0 +1,4 @@
+branch feature/checkout-v2 +3
+staged (6): M src/notifications/index.ts, M src/inventory/index.ts, M src/inventory/index.ts, M src/orders/index.ts, M src/checkout/index.ts, M src/payments/index.ts
+modified (18): M src/profile/service.ts, M src/session/utils.ts, M src/payments/routes.ts, M src/notifications/service.ts, M src/payments/service.ts, M src/payments/model.ts, M src/inventory/service.ts, M src/orders/utils.ts, M src/cart/utils.ts, M src/payments/utils.ts, M src/search/utils.ts, M src/payments/service.ts, M src/payments/service.ts, M src/billing/service.ts, M src/checkout/service.ts, M src/inventory/service.ts, M src/profile/model.ts, M src/payments/routes.ts
+untracked (8): src/profile/new-0.ts, src/session/new-1.ts, src/checkout/new-2.ts, src/payments/new-3.ts, src/billing/new-4.ts, src/notifications/new-5.ts, src/session/new-6.ts, src/payments/new-7.ts

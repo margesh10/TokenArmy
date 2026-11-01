@@ -1,0 +1,18 @@
+#1 [internal] load build definition from Dockerfile
+#1 DONE 9.8s
+#2 [internal] load metadata for docker.io/library/node:20-alpine
+#2 DONE 25.1s
+#3 [1/6] FROM docker.io/library/node:20-alpine
+#3 DONE 16.6s
+#4 [2/6] WORKDIR /app
+#4 DONE 17.4s
+#5 [3/6] COPY package*.json ./
+#5 DONE 0.7s
+#6 [4/6] RUN npm ci
+#6 DONE 2.3s
+#7 [5/6] COPY . .
+#7 DONE 4.9s
+#8 [6/6] RUN npm run build
+#8 DONE 12.5s
+#9 naming to docker.io/library/shop:latest done
+#9 DONE 1.2s

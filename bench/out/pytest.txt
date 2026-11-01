@@ -1,0 +1,15 @@
+[tokenarmy] 300 passing test lines hidden
+tests/test_orders.py::test_refund_partial FAILED                         [100%]
+
+=================================== FAILURES ===================================
+____________________________ test_refund_partial _____________________________
+
+    def test_refund_partial():
+        order = make_order(total=100)
+>       assert refund(order, 30).remaining == 70
+E       AssertionError: assert 100 == 70
+
+tests/test_orders.py:88: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_orders.py::test_refund_partial - AssertionError: assert 100 == 70
+======================== 1 failed, 300 passed in 9.81s =========================

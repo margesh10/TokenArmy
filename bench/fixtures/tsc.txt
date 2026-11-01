@@ -1,0 +1,92 @@
+src/orders/routes.ts(229,24): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+src/cart/routes.ts(117,14): error TS2532: Object is possibly 'undefined'.
+src/api/utils.ts(190,2): error TS7006: Parameter 'e' implicitly has an 'any' type.
+src/orders/service.ts(38,30): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+src/billing/utils.ts(94,13): error TS2532: Object is possibly 'undefined'.
+src/billing/utils.ts(219,3): error TS7006: Parameter 'e' implicitly has an 'any' type.
+src/api/model.ts(94,31): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+src/orders/utils.ts(62,7): error TS2532: Object is possibly 'undefined'.
+src/checkout/routes.ts(22,13): error TS7006: Parameter 'e' implicitly has an 'any' type.
+src/auth/service.ts(168,13): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+src/profile/routes.ts(167,7): error TS2532: Object is possibly 'undefined'.
+src/session/model.ts(205,15): error TS7006: Parameter 'e' implicitly has an 'any' type.
+src/api/model.ts(226,15): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+src/cart/utils.ts(136,20): error TS2532: Object is possibly 'undefined'.
+src/payments/service.ts(146,16): error TS7006: Parameter 'e' implicitly has an 'any' type.
+src/auth/routes.ts(88,12): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+src/orders/model.ts(208,1): error TS2532: Object is possibly 'undefined'.
+src/inventory/service.ts(115,13): error TS7006: Parameter 'e' implicitly has an 'any' type.
+src/api/routes.ts(78,25): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+src/auth/service.ts(29,3): error TS2532: Object is possibly 'undefined'.
+src/search/service.ts(106,29): error TS7006: Parameter 'e' implicitly has an 'any' type.
+src/billing/routes.ts(100,4): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+src/checkout/routes.ts(9,5): error TS2532: Object is possibly 'undefined'.
+src/billing/routes.ts(271,14): error TS7006: Parameter 'e' implicitly has an 'any' type.
+src/search/routes.ts(44,16): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+src/billing/model.ts(186,10): error TS2532: Object is possibly 'undefined'.
+src/profile/model.ts(34,37): error TS7006: Parameter 'e' implicitly has an 'any' type.
+src/cart/model.ts(257,11): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+src/notifications/routes.ts(12,9): error TS2532: Object is possibly 'undefined'.
+src/api/service.ts(221,13): error TS7006: Parameter 'e' implicitly has an 'any' type.
+src/cart/routes.ts(28,10): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+src/profile/service.ts(105,29): error TS2532: Object is possibly 'undefined'.
+src/inventory/utils.ts(250,35): error TS7006: Parameter 'e' implicitly has an 'any' type.
+src/notifications/service.ts(203,19): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+src/billing/routes.ts(88,26): error TS2532: Object is possibly 'undefined'.
+src/billing/model.ts(165,14): error TS7006: Parameter 'e' implicitly has an 'any' type.
+src/profile/service.ts(86,1): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+src/checkout/routes.ts(17,17): error TS2532: Object is possibly 'undefined'.
+src/billing/utils.ts(190,33): error TS7006: Parameter 'e' implicitly has an 'any' type.
+src/inventory/service.ts(147,16): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+src/session/service.ts(110,36): error TS2532: Object is possibly 'undefined'.
+src/inventory/utils.ts(225,28): error TS7006: Parameter 'e' implicitly has an 'any' type.
+src/orders/model.ts(53,12): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+src/cart/service.ts(65,37): error TS2532: Object is possibly 'undefined'.
+src/orders/model.ts(242,15): error TS7006: Parameter 'e' implicitly has an 'any' type.
+src/billing/model.ts(3,10): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+src/profile/utils.ts(113,2): error TS2532: Object is possibly 'undefined'.
+src/billing/utils.ts(67,36): error TS7006: Parameter 'e' implicitly has an 'any' type.
+src/search/service.ts(116,17): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+src/session/utils.ts(143,32): error TS2532: Object is possibly 'undefined'.
+src/payments/model.ts(175,1): error TS7006: Parameter 'e' implicitly has an 'any' type.
+src/billing/utils.ts(180,38): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+src/billing/model.ts(182,6): error TS2532: Object is possibly 'undefined'.
+src/profile/model.ts(191,19): error TS7006: Parameter 'e' implicitly has an 'any' type.
+src/cart/service.ts(278,39): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+src/api/utils.ts(22,34): error TS2532: Object is possibly 'undefined'.
+src/auth/service.ts(89,24): error TS7006: Parameter 'e' implicitly has an 'any' type.
+src/search/routes.ts(212,26): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+src/session/utils.ts(275,7): error TS2532: Object is possibly 'undefined'.
+src/api/utils.ts(193,29): error TS7006: Parameter 'e' implicitly has an 'any' type.
+src/cart/service.ts(210,3): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+src/payments/model.ts(9,20): error TS2532: Object is possibly 'undefined'.
+src/payments/routes.ts(280,37): error TS7006: Parameter 'e' implicitly has an 'any' type.
+src/billing/model.ts(153,1): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+src/notifications/routes.ts(67,21): error TS2532: Object is possibly 'undefined'.
+src/notifications/model.ts(297,28): error TS7006: Parameter 'e' implicitly has an 'any' type.
+src/profile/utils.ts(224,10): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+src/checkout/model.ts(52,2): error TS2532: Object is possibly 'undefined'.
+src/profile/utils.ts(23,11): error TS7006: Parameter 'e' implicitly has an 'any' type.
+src/checkout/service.ts(156,9): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+src/orders/routes.ts(58,3): error TS2532: Object is possibly 'undefined'.
+src/search/model.ts(217,7): error TS7006: Parameter 'e' implicitly has an 'any' type.
+src/checkout/model.ts(13,10): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+src/orders/utils.ts(119,17): error TS2532: Object is possibly 'undefined'.
+src/orders/utils.ts(271,18): error TS7006: Parameter 'e' implicitly has an 'any' type.
+src/orders/utils.ts(12,39): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+src/billing/utils.ts(65,29): error TS2532: Object is possibly 'undefined'.
+src/search/service.ts(104,23): error TS7006: Parameter 'e' implicitly has an 'any' type.
+src/profile/service.ts(47,9): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+src/checkout/routes.ts(198,6): error TS2532: Object is possibly 'undefined'.
+src/cart/model.ts(147,7): error TS7006: Parameter 'e' implicitly has an 'any' type.
+src/billing/routes.ts(71,18): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+src/api/service.ts(206,5): error TS2532: Object is possibly 'undefined'.
+src/checkout/routes.ts(86,24): error TS7006: Parameter 'e' implicitly has an 'any' type.
+src/auth/routes.ts(247,24): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+src/session/model.ts(61,11): error TS2532: Object is possibly 'undefined'.
+src/checkout/model.ts(249,15): error TS7006: Parameter 'e' implicitly has an 'any' type.
+src/notifications/routes.ts(28,1): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+src/cart/model.ts(126,32): error TS2532: Object is possibly 'undefined'.
+src/billing/routes.ts(102,35): error TS7006: Parameter 'e' implicitly has an 'any' type.
+
+Found 90 errors in 31 files.

@@ -1,0 +1,192 @@
+#1 [internal] load build definition from Dockerfile
+#1 13.654 vite v5.4.0 transforming (0) src/notifications/index.ts
+#1 14.513 vite v5.4.0 transforming (13) src/profile/index.ts
+#1 17.367 vite v5.4.0 transforming (26) src/api/index.ts
+#1 4.002 vite v5.4.0 transforming (39) src/session/index.ts
+#1 DONE 9.8s
+
+#2 [internal] load metadata for docker.io/library/node:20-alpine
+#2 11.231 sha256:2b5accb3e3338e947731410fdc55aa6664708d38fbfe04edeb068311280fc970 63MB / 90MB
+#2 14.710 sha256:1492738f76535f900fb9663751c095230c04c871ecf346d4093d30cb9d7e067b 0MB / 90MB
+#2 7.465 sha256:d32ef14c9937a0867edfef911982723190ef91a06a08bccae9c19bd7e627d6e0 38MB / 90MB
+#2 10.236 sha256:22f0e89c520074f3b7a652235c55d9cdb0da7157baf5e96cc3fbf3a82db79a74 8MB / 90MB
+#2 DONE 25.1s
+
+#3 [1/6] FROM docker.io/library/node:20-alpine
+#3 11.099 sha256:5ad4e7fe261d55c7157f39f99a825ee6879c8e5885344f0f4b76768eb26eed4b 0MB / 90MB
+#3 14.645 sha256:704c8597e3e7b394b1192a20ed9f59eb58c552f13c22b47f485571afa29d3b98 57MB / 90MB
+#3 4.700 sha256:e8a5cc2ccd21776506f8ac2edf621637f802aeab59a26ac202ec073c0ca6b893 84MB / 90MB
+#3 0.591 sha256:0bde10ed56dc828d1d4fc7662afbff9b32777efb59025b3bf1ff79e4a8e027bf 75MB / 90MB
+#3 DONE 16.6s
+
+#4 [2/6] WORKDIR /app
+#4 13.963 sha256:0f329909e601004b4d01bf24ccb0f4433d2d740bb5628121ec31d25756566775 73MB / 90MB
+#4 6.025 sha256:de7309e4fc6302ee9968755a6dd988aedf06134c51dfa731804d610f363df47a 16MB / 90MB
+#4 11.658 sha256:0805ec8fcf7101b55313274f76e5f89a206090f63bacc2e0e0b242e42ec60148 64MB / 90MB
+#4 3.819 sha256:53d94ec645ba94d83260e0c06c0d7470bd8106a1c09f2fb6b6ebc280464190b6 58MB / 90MB
+#4 DONE 17.4s
+
+#5 [3/6] COPY package*.json ./
+#5 2.898 sha256:b2478045207af76fbeaa6de22ef45139685fdc537040e9018aef589b2545f9fc 86MB / 90MB
+#5 5.590 sha256:bf8b51228c45f3b63cb3e17bed62156f5a7132727d934e84ac5ad2ef17c3e825 58MB / 90MB
+#5 4.554 sha256:be8aee308d145bcd555276647160a277f7276b7874a39c71bec7e30e098cb63e 52MB / 90MB
+#5 16.162 sha256:6b08137c018d6c84a0bf94ffe063f4df03bf1e377b0a2e2da7310f86844ccc09 22MB / 90MB
+#5 DONE 0.7s
+
+#6 [4/6] RUN npm ci
+#6 15.121 npm http fetch GET 200 https://registry.npmjs.org/pkg-0 232ms
+#6 2.549 npm http fetch GET 200 https://registry.npmjs.org/pkg-1 9ms
+#6 4.804 npm http fetch GET 200 https://registry.npmjs.org/pkg-2 214ms
+#6 9.879 npm http fetch GET 200 https://registry.npmjs.org/pkg-3 212ms
+#6 18.031 npm http fetch GET 200 https://registry.npmjs.org/pkg-4 139ms
+#6 18.281 npm http fetch GET 200 https://registry.npmjs.org/pkg-5 265ms
+#6 3.674 npm http fetch GET 200 https://registry.npmjs.org/pkg-6 185ms
+#6 5.371 npm http fetch GET 200 https://registry.npmjs.org/pkg-7 83ms
+#6 11.074 npm http fetch GET 200 https://registry.npmjs.org/pkg-8 261ms
+#6 8.077 npm http fetch GET 200 https://registry.npmjs.org/pkg-9 51ms
+#6 10.742 npm http fetch GET 200 https://registry.npmjs.org/pkg-10 279ms
+#6 6.264 npm http fetch GET 200 https://registry.npmjs.org/pkg-11 22ms
+#6 11.753 npm http fetch GET 200 https://registry.npmjs.org/pkg-12 179ms
+#6 14.881 npm http fetch GET 200 https://registry.npmjs.org/pkg-13 76ms
+#6 9.627 npm http fetch GET 200 https://registry.npmjs.org/pkg-14 299ms
+#6 5.665 npm http fetch GET 200 https://registry.npmjs.org/pkg-15 251ms
+#6 1.190 npm http fetch GET 200 https://registry.npmjs.org/pkg-16 61ms
+#6 10.738 npm http fetch GET 200 https://registry.npmjs.org/pkg-17 89ms
+#6 19.369 npm http fetch GET 200 https://registry.npmjs.org/pkg-18 241ms
+#6 8.443 npm http fetch GET 200 https://registry.npmjs.org/pkg-19 269ms
+#6 5.871 npm http fetch GET 200 https://registry.npmjs.org/pkg-20 101ms
+#6 15.957 npm http fetch GET 200 https://registry.npmjs.org/pkg-21 269ms
+#6 19.393 npm http fetch GET 200 https://registry.npmjs.org/pkg-22 48ms
+#6 7.475 npm http fetch GET 200 https://registry.npmjs.org/pkg-23 265ms
+#6 3.678 npm http fetch GET 200 https://registry.npmjs.org/pkg-24 59ms
+#6 15.438 npm http fetch GET 200 https://registry.npmjs.org/pkg-25 56ms
+#6 13.310 npm http fetch GET 200 https://registry.npmjs.org/pkg-26 5ms
+#6 16.546 npm http fetch GET 200 https://registry.npmjs.org/pkg-27 288ms
+#6 3.308 npm http fetch GET 200 https://registry.npmjs.org/pkg-28 97ms
+#6 1.711 npm http fetch GET 200 https://registry.npmjs.org/pkg-29 170ms
+#6 9.764 npm http fetch GET 200 https://registry.npmjs.org/pkg-30 114ms
+#6 4.187 npm http fetch GET 200 https://registry.npmjs.org/pkg-31 12ms
+#6 6.119 npm http fetch GET 200 https://registry.npmjs.org/pkg-32 206ms
+#6 14.293 npm http fetch GET 200 https://registry.npmjs.org/pkg-33 178ms
+#6 3.611 npm http fetch GET 200 https://registry.npmjs.org/pkg-34 57ms
+#6 16.404 npm http fetch GET 200 https://registry.npmjs.org/pkg-35 33ms
+#6 4.669 npm http fetch GET 200 https://registry.npmjs.org/pkg-36 202ms
+#6 8.397 npm http fetch GET 200 https://registry.npmjs.org/pkg-37 110ms
+#6 3.361 npm http fetch GET 200 https://registry.npmjs.org/pkg-38 99ms
+#6 12.162 npm http fetch GET 200 https://registry.npmjs.org/pkg-39 204ms
+#6 5.305 npm http fetch GET 200 https://registry.npmjs.org/pkg-40 285ms
+#6 19.371 npm http fetch GET 200 https://registry.npmjs.org/pkg-41 234ms
+#6 18.868 npm http fetch GET 200 https://registry.npmjs.org/pkg-42 173ms
+#6 2.767 npm http fetch GET 200 https://registry.npmjs.org/pkg-43 100ms
+#6 11.388 npm http fetch GET 200 https://registry.npmjs.org/pkg-44 254ms
+#6 15.997 npm http fetch GET 200 https://registry.npmjs.org/pkg-45 25ms
+#6 14.903 npm http fetch GET 200 https://registry.npmjs.org/pkg-46 155ms
+#6 19.459 npm http fetch GET 200 https://registry.npmjs.org/pkg-47 4ms
+#6 5.339 npm http fetch GET 200 https://registry.npmjs.org/pkg-48 48ms
+#6 11.772 npm http fetch GET 200 https://registry.npmjs.org/pkg-49 181ms
+#6 18.549 npm http fetch GET 200 https://registry.npmjs.org/pkg-50 17ms
+#6 16.873 npm http fetch GET 200 https://registry.npmjs.org/pkg-51 192ms
+#6 16.252 npm http fetch GET 200 https://registry.npmjs.org/pkg-52 171ms
+#6 19.945 npm http fetch GET 200 https://registry.npmjs.org/pkg-53 91ms
+#6 7.271 npm http fetch GET 200 https://registry.npmjs.org/pkg-54 268ms
+#6 6.455 npm http fetch GET 200 https://registry.npmjs.org/pkg-55 224ms
+#6 0.319 npm http fetch GET 200 https://registry.npmjs.org/pkg-56 205ms
+#6 18.253 npm http fetch GET 200 https://registry.npmjs.org/pkg-57 25ms
+#6 17.482 npm http fetch GET 200 https://registry.npmjs.org/pkg-58 211ms
+#6 7.224 npm http fetch GET 200 https://registry.npmjs.org/pkg-59 51ms
+#6 10.682 npm http fetch GET 200 https://registry.npmjs.org/pkg-60 139ms
+#6 7.116 npm http fetch GET 200 https://registry.npmjs.org/pkg-61 162ms
+#6 14.393 npm http fetch GET 200 https://registry.npmjs.org/pkg-62 240ms
+#6 12.038 npm http fetch GET 200 https://registry.npmjs.org/pkg-63 282ms
+#6 4.205 npm http fetch GET 200 https://registry.npmjs.org/pkg-64 233ms
+#6 5.938 npm http fetch GET 200 https://registry.npmjs.org/pkg-65 211ms
+#6 10.030 npm http fetch GET 200 https://registry.npmjs.org/pkg-66 32ms
+#6 16.018 npm http fetch GET 200 https://registry.npmjs.org/pkg-67 297ms
+#6 9.695 npm http fetch GET 200 https://registry.npmjs.org/pkg-68 154ms
+#6 13.528 npm http fetch GET 200 https://registry.npmjs.org/pkg-69 256ms
+#6 DONE 2.3s
+
+#7 [5/6] COPY . .
+#7 14.573 sha256:ca1783bc90d0af1a61a16f0539de57d8fa14fe03c80e935d446418fa9d4a30ea 60MB / 90MB
+#7 8.589 sha256:06375063cb959823faeb42759e7dc9c8b8527fac7ac0b62c71999d034cc062b9 87MB / 90MB
+#7 3.657 sha256:f974dc8b5d244adf2c111d02137e05645dc5a278a200bcdd0bbbad6756459e19 53MB / 90MB
+#7 0.084 sha256:1a027dfda13f0cdbe03287f0b7020b1479907c3e798ba1123726be8588663fa1 7MB / 90MB
+#7 DONE 4.9s
+
+#8 [6/6] RUN npm run build
+#8 17.594 vite v5.4.0 transforming (0) src/cart/index.ts
+#8 7.103 vite v5.4.0 transforming (13) src/auth/index.ts
+#8 11.310 vite v5.4.0 transforming (26) src/cart/index.ts
+#8 9.929 vite v5.4.0 transforming (39) src/billing/index.ts
+#8 6.346 vite v5.4.0 transforming (52) src/auth/index.ts
+#8 8.985 vite v5.4.0 transforming (65) src/api/index.ts
+#8 17.167 vite v5.4.0 transforming (78) src/orders/index.ts
+#8 3.645 vite v5.4.0 transforming (91) src/notifications/index.ts
+#8 19.557 vite v5.4.0 transforming (104) src/inventory/index.ts
+#8 7.246 vite v5.4.0 transforming (117) src/checkout/index.ts
+#8 10.955 vite v5.4.0 transforming (130) src/api/index.ts
+#8 0.287 vite v5.4.0 transforming (143) src/session/index.ts
+#8 19.266 vite v5.4.0 transforming (156) src/profile/index.ts
+#8 4.164 vite v5.4.0 transforming (169) src/session/index.ts
+#8 15.866 vite v5.4.0 transforming (182) src/api/index.ts
+#8 0.931 vite v5.4.0 transforming (195) src/cart/index.ts
+#8 15.936 vite v5.4.0 transforming (208) src/payments/index.ts
+#8 10.268 vite v5.4.0 transforming (221) src/auth/index.ts
+#8 18.155 vite v5.4.0 transforming (234) src/orders/index.ts
+#8 3.044 vite v5.4.0 transforming (247) src/api/index.ts
+#8 14.968 vite v5.4.0 transforming (260) src/billing/index.ts
+#8 17.031 vite v5.4.0 transforming (273) src/notifications/index.ts
+#8 7.389 vite v5.4.0 transforming (286) src/session/index.ts
+#8 5.287 vite v5.4.0 transforming (299) src/billing/index.ts
+#8 12.845 vite v5.4.0 transforming (312) src/notifications/index.ts
+#8 12.563 vite v5.4.0 transforming (325) src/inventory/index.ts
+#8 11.592 vite v5.4.0 transforming (338) src/notifications/index.ts
+#8 11.351 vite v5.4.0 transforming (351) src/profile/index.ts
+#8 16.666 vite v5.4.0 transforming (364) src/payments/index.ts
+#8 12.334 vite v5.4.0 transforming (377) src/billing/index.ts
+#8 5.074 vite v5.4.0 transforming (390) src/profile/index.ts
+#8 17.214 vite v5.4.0 transforming (403) src/notifications/index.ts
+#8 12.206 vite v5.4.0 transforming (416) src/checkout/index.ts
+#8 12.608 vite v5.4.0 transforming (429) src/cart/index.ts
+#8 6.950 vite v5.4.0 transforming (442) src/profile/index.ts
+#8 17.015 vite v5.4.0 transforming (455) src/notifications/index.ts
+#8 13.595 vite v5.4.0 transforming (468) src/profile/index.ts
+#8 9.075 vite v5.4.0 transforming (481) src/cart/index.ts
+#8 18.287 vite v5.4.0 transforming (494) src/session/index.ts
+#8 14.151 vite v5.4.0 transforming (507) src/orders/index.ts
+#8 1.164 vite v5.4.0 transforming (520) src/api/index.ts
+#8 7.838 vite v5.4.0 transforming (533) src/search/index.ts
+#8 4.280 vite v5.4.0 transforming (546) src/orders/index.ts
+#8 17.517 vite v5.4.0 transforming (559) src/cart/index.ts
+#8 12.535 vite v5.4.0 transforming (572) src/auth/index.ts
+#8 10.176 vite v5.4.0 transforming (585) src/search/index.ts
+#8 11.781 vite v5.4.0 transforming (598) src/payments/index.ts
+#8 6.566 vite v5.4.0 transforming (611) src/payments/index.ts
+#8 6.706 vite v5.4.0 transforming (624) src/checkout/index.ts
+#8 7.487 vite v5.4.0 transforming (637) src/search/index.ts
+#8 3.407 vite v5.4.0 transforming (650) src/orders/index.ts
+#8 18.650 vite v5.4.0 transforming (663) src/billing/index.ts
+#8 14.029 vite v5.4.0 transforming (676) src/cart/index.ts
+#8 12.785 vite v5.4.0 transforming (689) src/api/index.ts
+#8 13.744 vite v5.4.0 transforming (702) src/session/index.ts
+#8 12.838 vite v5.4.0 transforming (715) src/orders/index.ts
+#8 2.951 vite v5.4.0 transforming (728) src/notifications/index.ts
+#8 12.211 vite v5.4.0 transforming (741) src/billing/index.ts
+#8 10.928 vite v5.4.0 transforming (754) src/billing/index.ts
+#8 0.289 vite v5.4.0 transforming (767) src/session/index.ts
+#8 2.303 vite v5.4.0 transforming (780) src/orders/index.ts
+#8 1.164 vite v5.4.0 transforming (793) src/api/index.ts
+#8 12.014 vite v5.4.0 transforming (806) src/inventory/index.ts
+#8 16.284 vite v5.4.0 transforming (819) src/payments/index.ts
+#8 6.363 vite v5.4.0 transforming (832) src/inventory/index.ts
+#8 17.105 vite v5.4.0 transforming (845) src/search/index.ts
+#8 9.638 vite v5.4.0 transforming (858) src/session/index.ts
+#8 13.387 vite v5.4.0 transforming (871) src/notifications/index.ts
+#8 19.360 vite v5.4.0 transforming (884) src/inventory/index.ts
+#8 14.679 vite v5.4.0 transforming (897) src/profile/index.ts
+#8 DONE 12.5s
+
+#9 exporting to image
+#9 writing image sha256:1e6e67b38c43354838951c9d1945e6dda8dd70621d506f84ee10ef30e26de8d9 done
+#9 naming to docker.io/library/shop:latest done
+#9 DONE 1.2s

@@ -77,6 +77,21 @@ test('test-runner filter hides passes, keeps failures', () => {
   assert.match(out, /41 passing test lines hidden/);
 });
 
+test('deeply indented stack/code lines are not mistaken for progress bars', () => {
+  const raw = ['  ● suite › case', '', '      42 |   const t = total(cart);', '    > 43 |   expect(t).toBe(1);', '      at Object.<anonymous> (src/x.test.ts:43:13)', 'Tests: 1 failed, 1 total'].join('\n');
+  const out = squeeze(raw, { command: 'npx jest' });
+  assert.ok(out.includes('42 |   const t = total(cart);'));
+  assert.ok(out.includes('at Object.<anonymous> (src/x.test.ts:43:13)'));
+});
+
+test('compiler diagnostics keep every file:line location', () => {
+  const raw = Array.from({ length: 12 }, (_, i) => `src/m${i}.ts(${i + 1},5): error TS2532: Object is possibly 'undefined'.`).join('\n') + '\nFound 12 errors in 12 files.';
+  const out = applyFilter('npx tsc --noEmit', raw);
+  for (let i = 0; i < 12; i++) assert.ok(out.includes(`src/m${i}.ts:${i + 1}`), `missing m${i}`);
+  assert.match(out, /TS2532: Object is possibly 'undefined'\. \(×12\)/);
+  assert.ok(out.length < raw.length);
+});
+
 test('install filter keeps vulnerabilities and summary only', () => {
   const raw = ['npm WARN deprecated foo@1.0.0: use bar', ...Array.from({ length: 200 }, (_, i) => `http fetch GET 200 https://registry/x${i}`), 'added 312 packages in 9s', '3 high severity vulnerabilities'].join('\n');
   const out = applyFilter('npm install', raw);
@@ -147,6 +162,28 @@ test('prompt compress keeps code and quotes, removes waste', () => {
   assert.strictEqual(out.match(/run the tests/g).length, 1);
   assert.strictEqual(out.match(/x = 1/g).length, 2, 'code lines must not be deduped');
   assert.ok(out.includes('Always run the tests'));
+});
+
+test('compress leaves grammatical text after deletions', () => {
+  const t = [
+    "In today's fast-paced world of software development, it's important to note that tests matter.",
+    'This is a **robust**, **seamless**, cutting-edge e-commerce platform.',
+    'We deliver a world-class experience.',
+    '- Please make sure to use "pnpm" instead of npm.',
+    '- It should be noted that we use ESLint.',
+    '- Due to the fact that we deploy on Fly.io, please make sure that you test first.',
+    '- iOS builds run nightly.',
+  ].join('\n');
+  const out = prompt.compress(t, 2);
+  assert.ok(!/\*\*/.test(out), out);
+  assert.ok(!/^Of /m.test(out), out);
+  assert.match(out, /^Tests matter\./m);
+  assert.match(out, /an e-commerce platform/);
+  assert.match(out, /an experience/);
+  assert.match(out, /^- Use "pnpm" instead of npm\./m);
+  assert.match(out, /^- We use ESLint\./m);
+  assert.match(out, /^- Because we deploy on Fly\.io, test first\./m);
+  assert.match(out, /^- iOS builds run nightly\./m, 'untouched lines keep their casing');
 });
 
 test('pack respects budget and finds relevant chunk', () => {

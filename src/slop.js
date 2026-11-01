@@ -31,7 +31,7 @@ const PHRASES = [
   [/\bat the end of the day,? /gi, ''],
   [/\bneedless to say,? /gi, ''],
   [/\bit goes without saying that /gi, ''],
-  [/\bin today's (fast-paced|ever-evolving|rapidly changing|digital) (world|landscape|era),? /gi, ''],
+  [/\bin today's (fast-paced|ever-evolving|rapidly changing|digital) (world|landscape|era)( of [^,.]+)?,? /gi, ''],
   // Only intensifiers that never change meaning. ("just", "really", "very" can, so they stay.)
   [/\b(basically|essentially|literally),? (?=\w)/gi, ''],
   [/\b(delve|delving) into\b/gi, 'explore'],
@@ -88,19 +88,35 @@ function withCodeProtected(text, fn) {
   return fn(masked).replace(/\u0000(\d+)\u0000/g, (_, i) => store[+i]);
 }
 
+// Repair a line after words were deleted from it: spacing, orphan commas,
+// a/an agreement, and capitalisation at sentence / bullet start.
+function tidy(l) {
+  return l
+    .replace(/ {2,}/g, ' ')
+    .replace(/(,\s*)+(?=[,.;:!?])/g, '')
+    .replace(/\b(a|an|the) ,\s*/gi, '$1 ')
+    .replace(/,\s*,/g, ',')
+    .replace(/ ([,.;:!?])/g, '$1')
+    .replace(/\b([Aa]) (?=[aeio][a-z-])/g, '$1n ')
+    .replace(/^(\s*(?:[-*+]\s+|\d+\.\s+|#{1,6}\s+)?)([a-z])/, (m, p, c) => p + c.toUpperCase())
+    .replace(/([.!?]\s+)([a-z])/g, (m, p, c) => p + c.toUpperCase())
+    .replace(/\s+$/, '');
+}
+
 function deslop(text) {
   return withCodeProtected(text, (t) => {
     let lines = t.split('\n').map((line) => {
-      let l = line;
+      // Unwrap bold/italic around a lone slop word first, so "**robust**" doesn't leave "****".
+      let l = line.replace(/(\*\*|__|\*|_)([A-Za-z-]+)\1/g, (m, w, word) => (PHRASES.some(([re]) => new RegExp(re.source, 'i').test(word + ' ')) ? word : m));
       l = l
         .split(/(?<=[.!?])\s+/)
         .map((seg) => FILLER_SENTENCES.reduce((s, re) => s.replace(re, ''), seg))
         .filter((seg) => seg.trim())
         .join(' ');
       for (const [re, rep] of PHRASES) l = l.replace(re, rep);
-      // Fix capitalisation after deletions at sentence start.
-      l = l.replace(/(^|[.!?]\s+)([a-z])/g, (m, p, c) => p + c.toUpperCase());
-      return l.replace(/ {2,}/g, ' ').replace(/ ([,.;:!?])/g, '$1');
+      if (l === line) return l; // untouched lines keep their exact casing
+      l = tidy(l);
+      return l;
     });
     // Drop lines that became empty because they were pure filler.
     const out = [];
@@ -112,4 +128,4 @@ function deslop(text) {
   });
 }
 
-module.exports = { score, deslop, MARKERS, PHRASES, FILLER_SENTENCES, stripCode };
+module.exports = { score, deslop, tidy, MARKERS, PHRASES, FILLER_SENTENCES, stripCode };

@@ -21,7 +21,7 @@ function collapseCarriageReturns(s) {
     .join('\n');
 }
 
-const PROGRESS = /^\s*(\[[=#>\-\s.]+\]|[▏▎▍▌▋▊▉█░▒▓■□\s]{6,}|\d{1,3}(\.\d+)?%|[⠁-⣿]\s|(downloading|fetching|resolving|extracting|receiving objects|remote: (counting|compressing|enumerating)|compiling|building|progress))/i;
+const PROGRESS = /^\s*(\[[=#>\-\s.]+\]|[▏▎▍▌▋▊▉█░▒▓■□]{6,}|\d{1,3}(\.\d+)?%|[⠁-⣿]\s|(downloading|fetching|resolving|extracting|receiving objects|remote: (counting|compressing|enumerating)|compiling|building|progress))/i;
 
 function dropProgress(lines) {
   return lines.filter((l) => !(PROGRESS.test(l) && !SIGNAL.test(l)));

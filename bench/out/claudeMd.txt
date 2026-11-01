@@ -1,0 +1,28 @@
+# Project Guidelines
+
+Welcome! Following these guidelines is crucial.
+
+## Overview
+
+This project is an e-commerce platform. We use TypeScript and use many tools to deliver an experience.
+
+## Rules
+
+- Always run the tests before committing.
+- Use "pnpm" instead of npm.
+- Never commit secrets.
+- We use ESLint and Prettier.
+- All API handlers live in `src/api`.
+- Because we deploy on Fly.io, test with `fly deploy --dry-run`.
+
+## Architecture
+
+The app is split into modules. Each module has a service, routes and a model. The service layer is where business logic lives.
+
+```json
+{"modules":["auth","billing","cart","checkout"],"runtime":"node20","deploy":"fly.io"}
+```
+
+## Final Notes
+
+Code quality matters.

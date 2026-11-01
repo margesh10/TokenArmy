@@ -1,0 +1,428 @@
+commit 3b58b5b4147fce17ff16431f45e22e0dfef936fa
+Author: Alex Chen <dev0@example.com>
+Date:   Wed Oct 30 09:00:00 2026 -0400
+
+    Add pagination to orders API
+
+    Longer explanation of the change that most agents do not need to
+    read when they only want to know what happened recently.
+
+commit 72d9ee854884a35a323c909243456a2225432094
+Author: Priya Nair <dev1@example.com>
+Date:   Tue Oct 29 10:01:00 2026 -0400
+
+    Remove dead feature flag
+
+commit f13b1d61ecc8a97793d0b123e8bf2abca86a027e
+Author: Priya Nair <dev2@example.com>
+Date:   Thu Oct 28 11:02:00 2026 -0400
+
+    Remove dead feature flag
+
+commit 625ce3a9566e9a15e9d66ab8759a7ce57e71ca91
+Author: Alex Chen <dev3@example.com>
+Date:   Tue Oct 27 12:03:00 2026 -0400
+
+    Speed up CI cache
+
+    Longer explanation of the change that most agents do not need to
+    read when they only want to know what happened recently.
+
+commit 8b128d4e3ab474928d498104b58fe33e7918decb
+Author: Alex Chen <dev0@example.com>
+Date:   Wed Oct 26 13:04:00 2026 -0400
+
+    Docs: update README
+
+commit fd0fe39381bdb39b9aa88c1864f53db761934c4c
+Author: Alex Chen <dev1@example.com>
+Date:   Thu Oct 25 14:05:00 2026 -0400
+
+    Fix race in session refresh
+
+commit e7f58a686c6082431ae25c3ffe68fdc7868c9f5a
+Author: Alex Chen <dev2@example.com>
+Date:   Fri Oct 24 15:06:00 2026 -0400
+
+    Fix race in session refresh
+
+commit 70338d71d67f818844cabfaf7ac7ccbfaabf6bf6
+Author: Margesh <dev3@example.com>
+Date:   Fri Oct 23 16:07:00 2026 -0400
+
+    Add pagination to orders API
+
+    Longer explanation of the change that most agents do not need to
+    read when they only want to know what happened recently.
+
+commit d3fa9b93e88c8b0cb8ae85ee00a97183bf96e697
+Author: Alex Chen <dev0@example.com>
+Date:   Thu Oct 22 17:08:00 2026 -0400
+
+    Refactor cart totals
+
+    Longer explanation of the change that most agents do not need to
+    read when they only want to know what happened recently.
+
+commit 73d66dd021e767f4f1c7ca52db016a714f8e7d97
+Author: Priya Nair <dev1@example.com>
+Date:   Wed Oct 21 09:09:00 2026 -0400
+
+    Speed up CI cache
+
+    Longer explanation of the change that most agents do not need to
+    read when they only want to know what happened recently.
+
+commit 2c4e1b8d605af4db8fbf34b6b59c1a0515658808
+Author: Sam Lee <dev2@example.com>
+Date:   Fri Oct 20 10:10:00 2026 -0400
+
+    Bump deps
+
+    Longer explanation of the change that most agents do not need to
+    read when they only want to know what happened recently.
+
+commit 9887926a2da75eee327161425449258aa53f5fd5
+Author: Priya Nair <dev3@example.com>
+Date:   Thu Oct 19 11:11:00 2026 -0400
+
+    Fix race in session refresh
+
+    Longer explanation of the change that most agents do not need to
+    read when they only want to know what happened recently.
+
+commit aedacc691f9f9ad45c6fd4535d1306b27b4870c1
+Author: Sam Lee <dev0@example.com>
+Date:   Mon Oct 18 12:12:00 2026 -0400
+
+    Remove dead feature flag
+
+commit a0a434bce0b579d783ac00125ac1eeafd63ead22
+Author: Margesh <dev1@example.com>
+Date:   Thu Oct 17 13:13:00 2026 -0400
+
+    Remove dead feature flag
+
+commit 0ef3102b0ed21983954cef37f36b4494f271f8a1
+Author: Alex Chen <dev2@example.com>
+Date:   Wed Oct 16 14:14:00 2026 -0400
+
+    Fix race in session refresh
+
+    Longer explanation of the change that most agents do not need to
+    read when they only want to know what happened recently.
+
+commit 1fc3f7d5266e9cd326e002b9c0a50c402e1c8255
+Author: Priya Nair <dev3@example.com>
+Date:   Thu Oct 15 15:15:00 2026 -0400
+
+    Docs: update README
+
+commit 8d51a2ed40346297f3b4b7123b08defe93d97def
+Author: Priya Nair <dev0@example.com>
+Date:   Tue Oct 14 16:16:00 2026 -0400
+
+    Tighten zod schemas
+
+    Longer explanation of the change that most agents do not need to
+    read when they only want to know what happened recently.
+
+commit 2efb05f826dae4a744757e81e42a40bfda46ee1e
+Author: Priya Nair <dev1@example.com>
+Date:   Thu Oct 13 17:17:00 2026 -0400
+
+    Add retry to payment webhook
+
+commit 340a9caa53216a788066de31688a0300457e87ee
+Author: Sam Lee <dev2@example.com>
+Date:   Mon Oct 12 09:18:00 2026 -0400
+
+    Docs: update README
+
+commit cac080d11ca5656df5300fef746f08ebfee432fe
+Author: Alex Chen <dev3@example.com>
+Date:   Tue Oct 11 10:19:00 2026 -0400
+
+    Speed up CI cache
+
+commit abd0151b0c338894198e536a56e129b7a8a9d0d8
+Author: Priya Nair <dev0@example.com>
+Date:   Fri Oct 10 11:20:00 2026 -0400
+
+    Docs: update README
+
+commit 8c07e7955bb2b7e52ac8f2f151739ea041f2cd53
+Author: Alex Chen <dev1@example.com>
+Date:   Mon Oct 9 12:21:00 2026 -0400
+
+    Docs: update README
+
+    Longer explanation of the change that most agents do not need to
+    read when they only want to know what happened recently.
+
+commit 9ae1d50617fda97fee4df04d2351f9c41388460f
+Author: Sam Lee <dev2@example.com>
+Date:   Thu Oct 8 13:22:00 2026 -0400
+
+    Refactor cart totals
+
+commit 148b648345037e571f7b18a4900b96acf445fd16
+Author: Margesh <dev3@example.com>
+Date:   Fri Oct 7 14:23:00 2026 -0400
+
+    Add pagination to orders API
+
+commit d768eb085c88fe9879f0c8bd496f61ee38eeced0
+Author: Priya Nair <dev0@example.com>
+Date:   Wed Oct 6 15:24:00 2026 -0400
+
+    Add retry to payment webhook
+
+commit e00f85e0f4a62eb0cfda8db0881808b4c2381564
+Author: Priya Nair <dev1@example.com>
+Date:   Fri Oct 5 16:25:00 2026 -0400
+
+    Docs: update README
+
+    Longer explanation of the change that most agents do not need to
+    read when they only want to know what happened recently.
+
+commit 9619f5ba2c7d06561bbdaa046305a7f039999d4f
+Author: Alex Chen <dev2@example.com>
+Date:   Mon Oct 4 17:26:00 2026 -0400
+
+    Docs: update README
+
+commit 59b63b8646f939175983bcd08f3f18b58a48bd7c
+Author: Priya Nair <dev3@example.com>
+Date:   Mon Oct 3 09:27:00 2026 -0400
+
+    Refactor cart totals
+
+    Longer explanation of the change that most agents do not need to
+    read when they only want to know what happened recently.
+
+commit c3076508fe8220be4d90f1a0feb6e1d40d1213cc
+Author: Alex Chen <dev0@example.com>
+Date:   Thu Oct 30 10:28:00 2026 -0400
+
+    Add pagination to orders API
+
+commit cbc647e094945d7e4ba56c160834407fa4a63085
+Author: Alex Chen <dev1@example.com>
+Date:   Thu Oct 29 11:29:00 2026 -0400
+
+    Speed up CI cache
+
+    Longer explanation of the change that most agents do not need to
+    read when they only want to know what happened recently.
+
+commit d9c9b27a2e7aec604021f8f23077cd50c5bda229
+Author: Sam Lee <dev2@example.com>
+Date:   Mon Oct 28 12:30:00 2026 -0400
+
+    Refactor cart totals
+
+    Longer explanation of the change that most agents do not need to
+    read when they only want to know what happened recently.
+
+commit ee6aabf5d87c0516834c08e0f811a347dd0e03a5
+Author: Alex Chen <dev3@example.com>
+Date:   Wed Oct 27 13:31:00 2026 -0400
+
+    Add retry to payment webhook
+
+    Longer explanation of the change that most agents do not need to
+    read when they only want to know what happened recently.
+
+commit e9e539b91bd3293ee96a192a3832baef9021e2e9
+Author: Margesh <dev0@example.com>
+Date:   Wed Oct 26 14:32:00 2026 -0400
+
+    Bump deps
+
+    Longer explanation of the change that most agents do not need to
+    read when they only want to know what happened recently.
+
+commit 7c36a9a517edfa5cad865cca329dc5b0aedfc04b
+Author: Sam Lee <dev1@example.com>
+Date:   Fri Oct 25 15:33:00 2026 -0400
+
+    Add retry to payment webhook
+
+commit a2e0b011bc5318722306549e48f049442f1f68d2
+Author: Priya Nair <dev2@example.com>
+Date:   Tue Oct 24 16:34:00 2026 -0400
+
+    Remove dead feature flag
+
+commit 5b6aed200936203b2d4bf5fcd746f82d22bb857f
+Author: Alex Chen <dev3@example.com>
+Date:   Thu Oct 23 17:35:00 2026 -0400
+
+    Add pagination to orders API
+
+    Longer explanation of the change that most agents do not need to
+    read when they only want to know what happened recently.
+
+commit 3daf0aa4486e0748f944dfc1510ead4a15bf4cc5
+Author: Alex Chen <dev0@example.com>
+Date:   Mon Oct 22 09:36:00 2026 -0400
+
+    Add retry to payment webhook
+
+commit 525bec3c917e54b677855f7f1a2ec03921ff3cf7
+Author: Margesh <dev1@example.com>
+Date:   Mon Oct 21 10:37:00 2026 -0400
+
+    Docs: update README
+
+commit ba7596a402f7d8155881e607708890d4f580ff05
+Author: Sam Lee <dev2@example.com>
+Date:   Tue Oct 20 11:38:00 2026 -0400
+
+    Docs: update README
+
+commit 332b55f64831b04cd11b2231856bf9f335b0f834
+Author: Margesh <dev3@example.com>
+Date:   Wed Oct 19 12:39:00 2026 -0400
+
+    Handle unicode in search
+
+commit 4f2fba8182c18120a01a15d31f6c8705d5f0c55a
+Author: Priya Nair <dev0@example.com>
+Date:   Mon Oct 18 13:40:00 2026 -0400
+
+    Add retry to payment webhook
+
+commit e7ee45911df9b83ccc355f725e777979c49f6e30
+Author: Priya Nair <dev1@example.com>
+Date:   Thu Oct 17 14:41:00 2026 -0400
+
+    Docs: update README
+
+commit b04299b9f1360de4388c78df70558b148ea43062
+Author: Alex Chen <dev2@example.com>
+Date:   Mon Oct 16 15:42:00 2026 -0400
+
+    Handle unicode in search
+
+commit 13c65c192d0393eb4d47a472ed9c8e8572fe162d
+Author: Sam Lee <dev3@example.com>
+Date:   Fri Oct 15 16:43:00 2026 -0400
+
+    Remove dead feature flag
+
+commit 9745f377fe5bd5ec6ed47c76b1e28ef931131d44
+Author: Sam Lee <dev0@example.com>
+Date:   Thu Oct 14 17:44:00 2026 -0400
+
+    Tighten zod schemas
+
+    Longer explanation of the change that most agents do not need to
+    read when they only want to know what happened recently.
+
+commit ae845804bb86a38fce6a6104e37cc78ea3c882af
+Author: Margesh <dev1@example.com>
+Date:   Tue Oct 13 09:45:00 2026 -0400
+
+    Add pagination to orders API
+
+    Longer explanation of the change that most agents do not need to
+    read when they only want to know what happened recently.
+
+commit ae698b36cb75afd3650bac794ffedfd57d531ec6
+Author: Margesh <dev2@example.com>
+Date:   Wed Oct 12 10:46:00 2026 -0400
+
+    Add pagination to orders API
+
+commit c7b8ea61345c3855f2de54bb442e1f42bf90aeba
+Author: Sam Lee <dev3@example.com>
+Date:   Fri Oct 11 11:47:00 2026 -0400
+
+    Fix race in session refresh
+
+commit 8c2f179b80ed7e704074730097dd91d944302aac
+Author: Margesh <dev0@example.com>
+Date:   Wed Oct 10 12:48:00 2026 -0400
+
+    Remove dead feature flag
+
+commit e6b80e3e41ccea0de1f029fcf920311313fb2de3
+Author: Margesh <dev1@example.com>
+Date:   Mon Oct 9 13:49:00 2026 -0400
+
+    Bump deps
+
+    Longer explanation of the change that most agents do not need to
+    read when they only want to know what happened recently.
+
+commit f18d40426b42de0d7034e93050f3b2fa3bffce0f
+Author: Margesh <dev2@example.com>
+Date:   Fri Oct 8 14:50:00 2026 -0400
+
+    Speed up CI cache
+
+    Longer explanation of the change that most agents do not need to
+    read when they only want to know what happened recently.
+
+commit 35573c2935534df762cb81d60849cb23490e89d1
+Author: Margesh <dev3@example.com>
+Date:   Thu Oct 7 15:51:00 2026 -0400
+
+    Add retry to payment webhook
+
+commit 38cb50e4538b4a2e03928b61a4df73e01591d126
+Author: Sam Lee <dev0@example.com>
+Date:   Mon Oct 6 16:52:00 2026 -0400
+
+    Remove dead feature flag
+
+commit 45b3a6ea74f9edf21857c2fcdd31eda616bdf67a
+Author: Priya Nair <dev1@example.com>
+Date:   Fri Oct 5 17:53:00 2026 -0400
+
+    Add retry to payment webhook
+
+    Longer explanation of the change that most agents do not need to
+    read when they only want to know what happened recently.
+
+commit ac0e0cb728fa094bd27970fd9c45061cb5fa21b7
+Author: Priya Nair <dev2@example.com>
+Date:   Tue Oct 4 09:54:00 2026 -0400
+
+    Remove dead feature flag
+
+commit 62f5d9e7fc82578e807841f2f843b27b5a30e70a
+Author: Sam Lee <dev3@example.com>
+Date:   Fri Oct 3 10:55:00 2026 -0400
+
+    Bump deps
+
+commit 12ea45f1228c2858c5dd5f2363be143211563a5d
+Author: Margesh <dev0@example.com>
+Date:   Fri Oct 30 11:56:00 2026 -0400
+
+    Refactor cart totals
+
+commit 0093f517544b87e5cd13a875a8864e769dfc6635
+Author: Sam Lee <dev1@example.com>
+Date:   Tue Oct 29 12:57:00 2026 -0400
+
+    Tighten zod schemas
+
+commit 67cf6e0e30e84c0e0b1bc4bada54fd4327d301c1
+Author: Sam Lee <dev2@example.com>
+Date:   Thu Oct 28 13:58:00 2026 -0400
+
+    Tighten zod schemas
+
+    Longer explanation of the change that most agents do not need to
+    read when they only want to know what happened recently.
+
+commit aef8b9a658b7638578d4aede627239dc19d1353c
+Author: Priya Nair <dev3@example.com>
+Date:   Thu Oct 27 14:59:00 2026 -0400
+
+    Remove dead feature flag

@@ -123,17 +123,19 @@ function compilerDiagnostics(out) {
     const m = l.match(diag);
     if (m) {
       matched++;
-      const key = `${m[4]} ${m[5] || ''} ${m[6]}`.trim();
-      const entry = counts.get(key) || { n: 0, first: l.trim(), files: new Set() };
+      const key = `${m[4]} ${m[5] || ''}: ${m[6]}`.trim();
+      const entry = counts.get(key) || { n: 0, key, locs: [] };
       entry.n++;
-      entry.files.add(m[1].trim());
+      entry.locs.push(`${m[1].trim()}:${m[2]}`);
       counts.set(key, entry);
     } else if (SIGNAL.test(l) || /^\s*(Found|✖|\d+ problems?)/.test(l)) outLines.push(l);
   }
   if (matched < 5) return null;
-  const grouped = [...counts.values()].map((e) =>
-    e.n === 1 ? e.first : `${e.first}  (×${e.n} across ${e.files.size} file${e.files.size === 1 ? '' : 's'})`
-  );
+  // Message once per kind, then every location (the agent needs them to fix anything).
+  const grouped = [...counts.values()].map((e) => {
+    const shown = e.locs.slice(0, 60);
+    return `${e.key} (×${e.n})\n  ${shown.join(', ')}${e.locs.length > 60 ? `, … +${e.locs.length - 60}` : ''}`;
+  });
   return [...grouped, ...outLines].join('\n');
 }
 

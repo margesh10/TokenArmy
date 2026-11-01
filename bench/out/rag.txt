@@ -1,0 +1,97 @@
+### hooks/claude-posttooluse.js:1-23
+#!/usr/bin/env node
+'use strict';
+// Claude Code PostToolUse hook: compress Bash output before Claude sees it.
+//
+// Why PostToolUse (and not command rewriting like rtk's PreToolUse hook)?
+//   - The command the user approved is exactly the command that runs.
+//   - We never return permissionDecision:"allow", so no permission prompt is bypassed.
+//   - The full raw output is saved to ~/.tokenarmy/raw/ and its path is shown,
+//     so compression is recoverable: Claude can Read the raw log when it needs it.
+//
+// Opt out per command by adding the comment `# raw` to it, or globally with TOKENARMY_OFF=1.
+
+const fs = require('fs');
+const path = require('path');
+const crypto = require('crypto');
+const { squeeze } = require('../src/squeeze');
+const { estimateTokens } = require('../src/tokens');
+const stats = require('../src/stats');
+
+const MIN_TOKENS = +(process.env.TOKENARMY_MIN_TOKENS || 300); // don't touch small outputs
+const MIN_GAIN = +(process.env.TOKENARMY_MIN_GAIN || 0.2); // need ≥20% saving to bother
+const MAX_LINES = +(process.env.TOKENARMY_MAX_LINES || 120);
+
+### docs/PATTERNS.md:1-6
+# Token engineering patterns
+
+Ways to spend fewer tokens on context, retrieval, prompts and agent loops. Each pattern says what it costs, why it works and how to apply it.
+
+---
+
+### docs/PATTERNS.md:7-20
+## 1. The cost model you are actually paying
+
+In an agent loop, turn *n* resends turns 1…n-1. Total input over a session is roughly:
+
+```
+Σ (system + tools + memory) · n   +   Σ tool_output_i · (n − i)
+```
+
+Two consequences:
+- **Fixed preload** (system prompt, tool schemas, CLAUDE.md) is multiplied by turn count. Shrink it once and you save on every turn.
+- **Early tool output is the most expensive token you have.** A 5k-token test log on turn 3 of a 40-turn session costs ~185k input tokens. Compressing it at the source (the PostToolUse hook) beats any later summarisation.
+
+Output tokens cost 3-5× more each but are usually only 1-5% of a session's volume. Terse-output skills help cost a little; input discipline helps a lot.
+
+### docs/PATTERNS.md:78-81
+## 8. Write less code
+
+The cheapest tokens are the lines never generated, and never re-read in every later turn. Follow this order: YAGNI → reuse existing code → stdlib → platform built-ins → a dependency → new code (the ponytail ordering).
+
+### hooks/claude-posttooluse.js:54-81
+fs.writeFileSync(rawPath, `$ ${cmd}\n--- stdout ---\n${stdout}\n--- stderr ---\n${stderr}`);
+  } catch {
+    rawPath = '';
+  }
+  const note = `\n[tokenarmy: ~${before}→~${after} tokens${rawPath ? `; full output: ${rawPath}` : ''}]`;
+
+  stats.record({ kind: 'hook:bash', cmd: cmd.slice(0, 80), before, after });
+  process.stdout.write(
+    JSON.stringify({
+      hookSpecificOutput: {
+        hookEventName: 'PostToolUse',
+        updatedToolOutput: { ...res, stdout: newOut + note, stderr: newErr },
+      },
+    })
+  );
+}
+
+let buf = '';
+process.stdin.setEncoding('utf8');
+process.stdin.on('data', (d) => (buf += d));
+process.stdin.on('end', () => {
+  try {
+    main(buf);
+  } catch {
+    /* a hook must never break the agent */
+  }
+});
+
+### src/audit.js:84-92
+}
+  const lockOrGen = files.filter((f) => /(package-lock\.json|yarn\.lock|pnpm-lock\.yaml|poetry\.lock|Cargo\.lock|\.min\.(js|css)|\.map|\.log)$/i.test(f));
+  const settings = readJson(path.join(root, '.claude', 'settings.json')) || {};
+  const deny = ((settings.permissions || {}).deny || []).join(' ');
+  if (lockOrGen.length && !/lock|\.log|min\./i.test(deny)) add('medium', 'files', `${lockOrGen.length} lock/minified/log files with no Read deny rule`, lockOrGen.slice(0, 5).map((f) => path.relative(root, f)).join(', '), 'Copy the deny list from templates/settings.json into .claude/settings.json.', 0);
+
+  // 5. Hooks: is output compression wired?
+  const allHooks = JSON.stringify([settings.hooks, (readJson(path.join(home, '.claude', 'settings.json')) || {}).hooks]);
+  if (!/tokenarmy|rtk/i.test(allHooks)) add('high', 'hooks', 'No tool-output compression hook installed', 'Shell output (tests, installs, builds, git) is usually the single largest input-token sink in agent loops: it is appended to history and resent on every following turn.', 'tokenarmy init  (adds a PostToolUse hook that compresses Bash output; it never rewrites or auto-approves commands)', 0);
+
+### src/squeeze.js:9-13
+function stripAnsi(s) {
+  return s.replace(ANSI, '');
+}
+
+// Collapse carriage-return overwrites (progress bars) to the final frame.

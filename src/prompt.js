@@ -7,7 +7,7 @@
 //                  the "caveman" idea applied to INPUT, which is billed every turn)
 // Code blocks, URLs, paths, numbers and quoted strings are never altered.
 
-const { deslop } = require('./slop');
+const { deslop, tidy } = require('./slop');
 
 const STOP = new Set('a an the that which very really quite just so then also of'.split(' '));
 
@@ -63,14 +63,20 @@ function standard(text) {
   t = deslop(t);
   t = protect(t, (m) =>
     m
-      .replace(/^(#{1,6})\s*(.*?)\s*#*\s*$/gm, '$1 $2')
-      .replace(/\*\*(.+?)\*\*/g, '$1') // bold adds tokens, rarely meaning
-      .replace(/^\s*[-*_]{3,}\s*$/gm, '') // horizontal rules
-      .replace(/^(\s*)[*+] /gm, '$1- ')
-      .replace(/\bYou (must|should) always\b/g, 'Always')
-      .replace(/\bYou (must|should) never\b/g, 'Never')
-      .replace(/\bMake sure (to|that you)\b/gi, '')
-      .replace(/\bPlease\s+/g, '')
+      .split('\n')
+      .map((line) => {
+        const l = line
+          .replace(/^(#{1,6})\s*(.*?)\s*#*\s*$/, '$1 $2')
+          .replace(/\*\*(.+?)\*\*/g, '$1') // bold adds tokens, rarely meaning
+          .replace(/^\s*[-*_]{3,}\s*$/, '') // horizontal rules
+          .replace(/^(\s*)[*+] /, '$1- ')
+          .replace(/\bYou (must|should) always\b/g, 'Always')
+          .replace(/\bYou (must|should) never\b/g, 'Never')
+          .replace(/\b(please,?\s+)?(make sure|ensure) (to|that you)\s+/gi, '')
+          .replace(/\bplease,?\s+(?=[a-z])/gi, '');
+        return l === line ? l : tidy(l);
+      })
+      .join('\n')
   );
   return t.replace(/\n{3,}/g, '\n\n').trim() + '\n';
 }

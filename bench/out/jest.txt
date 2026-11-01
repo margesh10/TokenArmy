@@ -1,0 +1,24 @@
+[tokenarmy] 252 passing test lines hidden
+FAIL src/checkout/total.test.ts
+  checkout › total
+    ✕ applies discount before tax (12 ms)
+
+  ● checkout › total › applies discount before tax
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 107.1
+    Received: 108.0
+
+      42 |   const t = total(cart, { discount: 0.1, tax: 0.19 });
+    > 43 |   expect(t).toBe(107.1);
+         |             ^
+      44 | });
+
+      at Object.<anonymous> (src/checkout/total.test.ts:43:13)
+
+Test Suites: 1 failed, 12 passed, 13 total
+Tests:       1 failed, 240 passed, 241 total
+Snapshots:   0 total
+Time:        18.442 s
+Ran all test suites.

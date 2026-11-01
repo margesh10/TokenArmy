@@ -1,0 +1,45 @@
+On branch feature/checkout-v2
+Your branch is ahead of 'origin/feature/checkout-v2' by 3 commits.
+  (use "git push" to publish your local commits)
+
+Changes to be committed:
+  (use "git restore --staged <file>..." to unstage)
+	modified:   src/notifications/index.ts
+	modified:   src/inventory/index.ts
+	modified:   src/inventory/index.ts
+	modified:   src/orders/index.ts
+	modified:   src/checkout/index.ts
+	modified:   src/payments/index.ts
+
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   src/profile/service.ts
+	modified:   src/session/utils.ts
+	modified:   src/payments/routes.ts
+	modified:   src/notifications/service.ts
+	modified:   src/payments/service.ts
+	modified:   src/payments/model.ts
+	modified:   src/inventory/service.ts
+	modified:   src/orders/utils.ts
+	modified:   src/cart/utils.ts
+	modified:   src/payments/utils.ts
+	modified:   src/search/utils.ts
+	modified:   src/payments/service.ts
+	modified:   src/payments/service.ts
+	modified:   src/billing/service.ts
+	modified:   src/checkout/service.ts
+	modified:   src/inventory/service.ts
+	modified:   src/profile/model.ts
+	modified:   src/payments/routes.ts
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+	src/profile/new-0.ts
+	src/session/new-1.ts
+	src/checkout/new-2.ts
+	src/payments/new-3.ts
+	src/billing/new-4.ts
+	src/notifications/new-5.ts
+	src/session/new-6.ts
+	src/payments/new-7.ts
