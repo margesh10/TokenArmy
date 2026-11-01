@@ -105,12 +105,12 @@
       "id": "rag",
       "label": "RAG: src+docs vs 1.5k pack",
       "tool": "pack",
-      "before": 18732,
-      "after": 1515,
-      "saved": 17217,
-      "pct": 92,
-      "linesBefore": 1162,
-      "linesAfter": 97
+      "before": 37343,
+      "after": 1535,
+      "saved": 35808,
+      "pct": 96,
+      "linesBefore": 2302,
+      "linesAfter": 92
     }
   ],
   "session": {

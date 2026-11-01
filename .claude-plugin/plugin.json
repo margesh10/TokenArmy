@@ -1,0 +1,10 @@
+{
+  "name": "tokenarmy",
+  "description": "Shrinks noisy tool output, grep results and file re-reads before Claude sees them, keeps a checkpoint that survives compaction, and learns from your sessions. Local only, zero dependencies.",
+  "version": "0.2.0",
+  "author": { "name": "Margesh" },
+  "homepage": "https://github.com/margesh10/TokenArmy",
+  "repository": "https://github.com/margesh10/TokenArmy",
+  "license": "MIT",
+  "keywords": ["tokens", "context", "compression", "cost", "hooks"]
+}

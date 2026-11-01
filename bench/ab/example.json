@@ -1,0 +1,15 @@
+{
+  "name": "TokenArmy repo: fix a planted off-by-one in dedupeRuns",
+  "template": ".",
+  "exclude": [".git", "node_modules", ".claude", "bench"],
+  "setup": [
+    "node -e \"const fs=require('fs'),f='src/squeeze.js';fs.writeFileSync(f,fs.readFileSync(f,'utf8').replace('run >= minRun','run > minRun - 2'))\""
+  ],
+  "prompt": "The test suite in this repo is failing. Run `npm test`, find the root cause, fix it in the source code (do not change the tests), then run `npm test` again to confirm everything passes. Reply with a one-line summary of the fix.",
+  "check": "npm test",
+  "expect": "dedupeRuns|minRun|squeeze",
+  "runs": 3,
+  "warmup": 1,
+  "parallel": true,
+  "budget": 2
+}

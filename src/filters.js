@@ -130,13 +130,122 @@ function compilerDiagnostics(out) {
       counts.set(key, entry);
     } else if (SIGNAL.test(l) || /^\s*(Found|✖|\d+ problems?)/.test(l)) outLines.push(l);
   }
-  if (matched < 5) return null;
+  if (matched < 5) return lintCodes(out) || buildProgress(out);
   // Message once per kind, then every location (the agent needs them to fix anything).
   const grouped = [...counts.values()].map((e) => {
     const shown = e.locs.slice(0, 60);
     return `${e.key} (×${e.n})\n  ${shown.join(', ')}${e.locs.length > 60 ? `, … +${e.locs.length - 60}` : ''}`;
   });
   return [...grouped, ...outLines].join('\n');
+}
+
+// ruff / flake8 / pylint style: path:line:col: CODE message -> one line per rule code, every location kept.
+function lintCodes(out) {
+  const re = /^(.+?):(\d+):(\d+):\s*([A-Z]{1,4}\d{2,4})\s+(.*)$/;
+  const by = new Map();
+  const rest = [];
+  let matched = 0;
+  for (const l of out.split('\n')) {
+    const m = l.match(re);
+    if (!m) {
+      if (l.trim() && (SIGNAL.test(l) || /^(Found|\d+ (errors?|problems?)|\[\*\])/i.test(l.trim()))) rest.push(l);
+      continue;
+    }
+    matched++;
+    const e = by.get(m[4]) || { msgs: new Set(), locs: [] };
+    e.msgs.add(m[5].trim());
+    e.locs.push(`${m[1]}:${m[2]}`);
+    by.set(m[4], e);
+  }
+  if (matched < 5) return null;
+  const lines = [...by.entries()]
+    .sort((a, b) => b[1].locs.length - a[1].locs.length)
+    .map(([code, e]) => {
+      const msg = [...e.msgs];
+      return `${code} ${msg[0]}${msg.length > 1 ? ` (+${msg.length - 1} variants)` : ''} (×${e.locs.length})\n  ${e.locs.slice(0, 60).join(', ')}${e.locs.length > 60 ? `, … +${e.locs.length - 60}` : ''}`;
+    });
+  return [...lines, ...rest].join('\n');
+}
+
+// cargo / mvn / gradle / dotnet / pip progress lines -> one count per verb; everything else kept.
+const PROGRESS = /^\s*(Compiling|Checking|Fresh|Downloaded|Downloading|Updating|Locking|Adding|Installing|Unpacking|Collecting|Using cached|Building wheel|Created wheel|Stored in directory|> Task\b|\[INFO\] (Download(ing|ed)|Building|Installing|---|Copying|Using|Compiling)|Download(ing|ed) from|Progress \(\d+\))/;
+function buildProgress(out) {
+  const counts = new Map();
+  const kept = [];
+  for (const l of out.split('\n')) {
+    const m = !SIGNAL.test(l) && l.match(PROGRESS);
+    if (m) counts.set(m[1], (counts.get(m[1]) || 0) + 1);
+    else kept.push(l);
+  }
+  const total = [...counts.values()].reduce((a, b) => a + b, 0);
+  if (total < 10) return null;
+  const summary = [...counts.entries()].map(([k, n]) => `${k.replace(/^\[INFO\] /, '')} ×${n}`).join(', ');
+  return [`[tokenarmy] ${total} progress lines collapsed: ${summary}`, ...kept].join('\n');
+}
+
+// git diff: drop index/---/+++ noise, keep 1 line of context around each change.
+function gitDiff(out) {
+  if (!/^diff --git /m.test(out)) return null;
+  const lines = out.split('\n');
+  const res = [];
+  let ctx = [];
+  let afterChange = 0;
+  const flush = () => {
+    if (ctx.length > 1) res.push(`  … ${ctx.length - 1} unchanged line${ctx.length - 1 === 1 ? '' : 's'}`);
+    if (ctx.length) res.push(ctx[ctx.length - 1]);
+    ctx = [];
+  };
+  for (const l of lines) {
+    const m = l.match(/^diff --git a\/(.+?) b\/(.+)$/);
+    if (m) {
+      ctx = [];
+      afterChange = 0;
+      res.push(`=== ${m[2]}${m[1] !== m[2] ? ` (renamed from ${m[1]})` : ''}`);
+      continue;
+    }
+    if (/^(index [0-9a-f]+\.\.|--- (a\/|\/dev\/null)|\+\+\+ (b\/|\/dev\/null))/.test(l)) continue;
+    if (/^@@/.test(l)) {
+      ctx = [];
+      afterChange = 0;
+      res.push(l.replace(/^(@@ [^@]+ @@).*/, '$1'));
+      continue;
+    }
+    if (/^[+-]/.test(l)) {
+      flush();
+      res.push(l);
+      afterChange = 1;
+      continue;
+    }
+    if (afterChange > 0) {
+      res.push(l);
+      afterChange--;
+      continue;
+    }
+    ctx.push(l);
+  }
+  if (ctx.length > 1) res.push(`  … ${ctx.length} unchanged lines`);
+  return res.join('\n');
+}
+
+// git push / pull / fetch / clone: drop transfer progress, keep refs, conflicts and errors.
+function gitTransfer(out) {
+  const NOISE = /^(remote:\s*)?(Enumerating objects|Counting objects|Compressing objects|Writing objects|Total \d+|Delta compression|Resolving deltas|Receiving objects|Unpacking objects|Updating files|Checking out files|Filtering content)\b/;
+  const lines = out.split('\n');
+  const kept = lines.filter((l) => l.trim() && !NOISE.test(l.trim()));
+  if (kept.length === lines.filter((l) => l.trim()).length) return null;
+  return kept.join('\n') || 'done (transfer progress hidden)';
+}
+
+// docker ps / kubectl get / podman: long tables -> header, unhealthy rows, first rows, count.
+function bigTable(out) {
+  const lines = out.split('\n').filter((l) => l.trim());
+  if (lines.length < 40) return null;
+  const BAD = /CrashLoopBackOff|Error|Failed|Evicted|OOMKilled|Pending|Unknown|Exited \([1-9]\d*\)|unhealthy|Restarting/i;
+  const [header, ...rows] = lines;
+  const bad = rows.filter((r) => BAD.test(r));
+  const first = rows.filter((r) => !BAD.test(r)).slice(0, 25);
+  const hidden = rows.length - bad.length - first.length;
+  return [header, ...bad, ...first, ...(hidden > 0 ? [`… +${hidden} more rows (${rows.length} total, ${bad.length} unhealthy shown first)`] : [])].join('\n');
 }
 
 function dockerBuild(out) {
@@ -152,8 +261,12 @@ const RULES = [
   { name: 'git-log', cmd: /\bgit\s+log\b(?!.*(--oneline|--format|--pretty))/, fn: gitLog },
   { name: 'install', cmd: /\b(npm|pnpm|yarn|bun)\s+(i|install|add|ci)\b|\bpip3?\s+install\b|\buv\s+(pip|sync|add)\b|\bpoetry\s+(install|add)\b/, fn: packageInstall },
   { name: 'tests', cmd: /\b(jest|vitest|mocha|pytest|py\.test|cargo\s+test|go\s+test|npm\s+(run\s+)?test|pnpm\s+(run\s+)?test|yarn\s+test|node\s+--test|dotnet\s+test|rspec|phpunit)\b/, fn: testRunner },
-  { name: 'diagnostics', cmd: /\b(tsc|eslint|cargo\s+(build|check|clippy)|gcc|g\+\+|clang|mypy|ruff|pylint|go\s+vet|dotnet\s+build)\b/, fn: compilerDiagnostics },
+  { name: 'diagnostics', cmd: /\b(tsc|eslint|cargo\s+(build|check|clippy)|gcc|g\+\+|clang|mypy|ruff|flake8|pylint|go\s+vet|dotnet\s+build)\b/, fn: compilerDiagnostics },
+  { name: 'build', cmd: /\b(mvn|mvnw|gradle|gradlew|cargo\s+(run|install|fetch|update)|dotnet\s+(restore|publish)|cmake\s+--build|make)\b/, fn: (o) => compilerDiagnostics(o) || buildProgress(o) },
   { name: 'docker', cmd: /\bdocker\s+(build|compose\s+build|buildx)\b/, fn: dockerBuild },
+  { name: 'git-diff', cmd: /\bgit\s+(diff|show)\b(?!.*(--stat|--name-only|--name-status|--numstat|--shortstat))/, fn: gitDiff },
+  { name: 'git-transfer', cmd: /\bgit\s+(push|pull|fetch|clone)\b/, fn: gitTransfer },
+  { name: 'table', cmd: /\b(docker|podman)\s+(ps|images|container\s+ls|image\s+ls)\b|\bkubectl\s+get\b|\boc\s+get\b/, fn: bigTable },
   { name: 'listing', cmd: /^\s*(ls|dir|find|tree|Get-ChildItem|gci)\b/, fn: listing },
 ];
 
@@ -180,4 +293,4 @@ function applyFilter(command, output) {
   }
 }
 
-module.exports = { applyFilter, detectFilter, RULES, gitStatus, gitLog, packageInstall, testRunner, listing, compilerDiagnostics, dockerBuild };
+module.exports = { applyFilter, detectFilter, RULES, gitStatus, gitLog, packageInstall, testRunner, listing, compilerDiagnostics, dockerBuild, lintCodes, buildProgress, gitDiff, gitTransfer, bigTable };

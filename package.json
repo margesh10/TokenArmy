@@ -1,6 +1,6 @@
 {
   "name": "tokenarmy",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Save tokens everywhere: compress tool output, strip AI slop, pack RAG context to budget, and audit where your agent wastes context.",
   "author": "Margesh",
   "license": "MIT",
@@ -11,7 +11,7 @@
     "tokenarmy": "bin/tokenarmy.js"
   },
   "main": "src/index.js",
-  "files": ["bin", "src", "hooks", "skills", "templates", "docs"],
+  "files": ["bin", "src", "hooks", "skills", "templates", "docs", ".claude-plugin"],
   "engines": {
     "node": ">=18"
   },

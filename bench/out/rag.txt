@@ -1,26 +1,27 @@
 ### hooks/claude-posttooluse.js:1-23
 #!/usr/bin/env node
 'use strict';
-// Claude Code PostToolUse hook: compress Bash output before Claude sees it.
+// Claude Code PostToolUse hook. Shrinks tool results before Claude sees them:
+//   Bash / PowerShell  noisy command output -> errors, failures, summaries (built-in + learned filters)
+//   Grep               long match lists -> grouped by file with counts
+//   Read               re-reading an unchanged file -> a short note; a changed file -> just the diff
 //
 // Why PostToolUse (and not rewriting commands in a PreToolUse hook)?
 //   - The command the user approved is exactly the command that runs.
-//   - We never return permissionDecision:"allow", so no permission prompt is bypassed.
-//   - The full raw output is saved to ~/.tokenarmy/raw/ and its path is shown,
-//     so compression is recoverable: Claude can Read the raw log when it needs it.
+//   - We never return permissionDecision, so no permission prompt is bypassed.
+//   - Raw output is saved to ~/.tokenarmy/raw/ and its path is shown, so nothing is lost.
 //
-// Opt out per command by adding the comment `# raw` to it, or globally with TOKENARMY_OFF=1.
+// It also learns: opening a raw log means a compression hid something needed. Command families
+// that keep getting expanded are automatically left alone (see src/learn.js).
+//
+// Opt out: add `# raw` to a command, TOKENARMY_OFF=1 (everything), TOKENARMY_READ_DEDUPE=0,
+// TOKENARMY_SEARCH=0, or list commands under "bypass" in ~/.tokenarmy/filters.json.
 
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
-const { squeeze } = require('../src/squeeze');
+const { squeeze, stripAnsi, collapseCarriageReturns, squashBlankLines } = require('../src/squeeze');
 const { estimateTokens } = require('../src/tokens');
-const stats = require('../src/stats');
-
-const MIN_TOKENS = +(process.env.TOKENARMY_MIN_TOKENS || 300); // don't touch small outputs
-const MIN_GAIN = +(process.env.TOKENARMY_MIN_GAIN || 0.2); // need ≥20% saving to bother
-const MAX_LINES = +(process.env.TOKENARMY_MAX_LINES || 120);
 
 ### docs/PATTERNS.md:1-6
 # Token engineering patterns
@@ -44,40 +45,6 @@ Two consequences:
 
 Output tokens cost 3-5× more each but are usually only 1-5% of a session's volume. Terse-output skills help cost a little; input discipline helps a lot.
 
-### docs/PATTERNS.md:78-81
-## 8. Write less code
-
-The cheapest tokens are the lines never generated, and never re-read in every later turn. Follow this order: YAGNI → reuse existing code → stdlib → platform built-ins → a dependency → new code.
-
-### hooks/claude-posttooluse.js:54-81
-fs.writeFileSync(rawPath, `$ ${cmd}\n--- stdout ---\n${stdout}\n--- stderr ---\n${stderr}`);
-  } catch {
-    rawPath = '';
-  }
-  const note = `\n[tokenarmy: ~${before}→~${after} tokens${rawPath ? `; full output: ${rawPath}` : ''}]`;
-
-  stats.record({ kind: 'hook:bash', cmd: cmd.slice(0, 80), before, after });
-  process.stdout.write(
-    JSON.stringify({
-      hookSpecificOutput: {
-        hookEventName: 'PostToolUse',
-        updatedToolOutput: { ...res, stdout: newOut + note, stderr: newErr },
-      },
-    })
-  );
-}
-
-let buf = '';
-process.stdin.setEncoding('utf8');
-process.stdin.on('data', (d) => (buf += d));
-process.stdin.on('end', () => {
-  try {
-    main(buf);
-  } catch {
-    /* a hook must never break the agent */
-  }
-});
-
 ### src/audit.js:84-92
 }
   const lockOrGen = files.filter((f) => /(package-lock\.json|yarn\.lock|pnpm-lock\.yaml|poetry\.lock|Cargo\.lock|\.min\.(js|css)|\.map|\.log)$/i.test(f));
@@ -89,9 +56,37 @@ process.stdin.on('end', () => {
   const allHooks = JSON.stringify([settings.hooks, (readJson(path.join(home, '.claude', 'settings.json')) || {}).hooks]);
   if (!/tokenarmy|posttooluse/i.test(allHooks)) add('high', 'hooks', 'No tool-output compression hook installed', 'Shell output (tests, installs, builds, git) is usually the single largest input-token sink in agent loops: it is appended to history and resent on every following turn.', 'tokenarmy init  (adds a PostToolUse hook that compresses Bash output; it never rewrites or auto-approves commands)', 0);
 
-### src/squeeze.js:9-13
-function stripAnsi(s) {
-  return s.replace(ANSI, '');
+### src/learn.js:79-86
+function isBypassed(command, filters) {
+  return (filters.bypass || []).some((b) => {
+    const r = re(b);
+    return r && r.test(command);
+  });
 }
 
-// Collapse carriage-return overwrites (progress bars) to the final frame.
+// Families whose compressed output the agent keeps opening in full.
+
+### src/learn.js:100-113
+function rawLogCommand(file) {
+  try {
+    const fd = fs.openSync(file, 'r');
+    const buf = Buffer.alloc(400);
+    const n = fs.readSync(fd, buf, 0, 400, 0);
+    fs.closeSync(fd);
+    const first = buf.toString('utf8', 0, n).split('\n')[0];
+    return first.startsWith('$ ') ? first.slice(2) : null;
+  } catch {
+    return null;
+  }
+}
+
+// Does this tool call open one of our raw logs? Returns the original command if so.
+
+### src/search.js:1-8
+'use strict';
+// Search-output compression: group hits by file, keep the first few per file, count the rest,
+// truncate very long lines (minified files, lockfiles). Works on Claude Code Grep "content" mode
+// (path:line:text or path:line-text) and grep/rg/Select-String output.
+const { SIGNAL } = require('./squeeze-signal');
+
+const LINE = /^(.+?)([:-])(\d+)[:-](.*)$/; // file:12:text  |  file-12-text (context lines)

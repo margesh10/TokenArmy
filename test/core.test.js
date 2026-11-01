@@ -222,7 +222,8 @@ test('Claude Code hook replaces large Bash output and keeps shape', () => {
   const r = spawnSync(process.execPath, [path.join(__dirname, '..', 'hooks', 'claude-posttooluse.js')], {
     input: JSON.stringify(evt),
     encoding: 'utf8',
-    env: { ...process.env, TOKENARMY_HOME: path.join(require('os').tmpdir(), 'tokenarmy-test') },
+    // Drop the user's opt-out so the test checks the hook itself, not their shell.
+    env: { ...process.env, TOKENARMY_OFF: '', TOKENARMY_HOME: path.join(require('os').tmpdir(), 'tokenarmy-test') },
   });
   const out = JSON.parse(r.stdout);
   const u = out.hookSpecificOutput.updatedToolOutput;
@@ -240,4 +241,39 @@ test('hook ignores small output and "# raw" commands', () => {
   assert.strictEqual(run({ tool_name: 'Bash', tool_input: { command: 'ls' }, tool_response: { stdout: 'a\nb' } }), '');
   const big = 'x y z\n'.repeat(2000);
   assert.strictEqual(run({ tool_name: 'Bash', tool_input: { command: 'cat f # raw' }, tool_response: { stdout: big } }), '');
+});
+
+test('statusline shows model, context, cost and per-session savings', () => {
+  const fs = require('fs');
+  const os = require('os');
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'ta-'));
+  fs.writeFileSync(
+    path.join(home, 'gain.jsonl'),
+    [
+      { kind: 'hook:bash', session: 'abc', before: 3000, after: 200 },
+      { kind: 'hook:bash', session: 'other', before: 9000, after: 100 },
+    ].map((r) => JSON.stringify(r)).join('\n') + '\n'
+  );
+  const input = {
+    session_id: 'abc',
+    model: { id: 'claude-opus-5-5', display_name: 'Opus 5.5' },
+    cost: { total_cost_usd: 1.234 },
+    context_window: { context_window_size: 1000000, current_usage: { input_tokens: 5000, cache_read_input_tokens: 40000 } },
+  };
+  const r = spawnSync(process.execPath, [path.join(__dirname, '..', 'bin', 'tokenarmy.js'), 'statusline'], {
+    input: JSON.stringify(input),
+    encoding: 'utf8',
+    env: { ...process.env, TOKENARMY_HOME: home, NO_COLOR: '1' },
+  });
+  assert.strictEqual(r.status, 0, r.stderr);
+  assert.match(r.stdout, /Opus 5\.5/);
+  assert.match(r.stdout, /\$1\.23/);
+  assert.match(r.stdout, /saved 2\.8k/); // only session "abc" counted
+  assert.match(r.stdout, /ctx 45/);
+});
+
+test('statusline survives empty stdin', () => {
+  const r = spawnSync(process.execPath, [path.join(__dirname, '..', 'bin', 'tokenarmy.js'), 'statusline'], { input: '', encoding: 'utf8' });
+  assert.strictEqual(r.status, 0, r.stderr);
+  assert.ok(r.stdout.trim().length > 0);
 });

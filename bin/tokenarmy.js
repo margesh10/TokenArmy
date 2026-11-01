@@ -29,8 +29,14 @@ Usage: tokenarmy <command> [args]
   graph <dir> --seed <file> [--hops 2]
                                      Files related to <file> via imports (graph-RAG)
   audit [dir] [--json]               Find where this project/agent setup wastes tokens
-  init [--global] [--skill]          Install the Claude Code PostToolUse hook (+ terse skill)
+  init [--global] [--skill] [--statusline]
+                                     Install the Claude Code hooks (+ terse skill,
+                                     + status line showing context, $ and tokens saved)
   gain                               Local savings ledger
+  expand [id|path]                   Print a saved raw output (latest if no id)
+  learn [--write]                    What it learned: auto-bypassed commands, proposed noise filters
+  ab <config.json> [--out dir]       Controlled A/B benchmark on a real task (on vs off, billed tokens)
+  statusline                         Status line renderer (reads Claude Code's JSON on stdin)
   help | version
 `;
 
@@ -171,14 +177,30 @@ const commands = {
       s = JSON.parse(fs.readFileSync(file, 'utf8'));
       fs.writeFileSync(file + '.bak', JSON.stringify(s, null, 2));
     }
-    const hookPath = path.resolve(__dirname, '..', 'hooks', 'claude-posttooluse.js').replace(/\\/g, '/');
-    const command = `node "${hookPath}"`;
+    // Replace any older TokenArmy entries (e.g. a Bash-only matcher) with the current set; keep everything else.
+    const ours = (entry) => /claude-(posttooluse|lifecycle)\.js/.test(JSON.stringify(entry));
     s.hooks = s.hooks || {};
-    s.hooks.PostToolUse = s.hooks.PostToolUse || [];
-    const exists = JSON.stringify(s.hooks.PostToolUse).includes('claude-posttooluse.js');
-    if (!exists) s.hooks.PostToolUse.push({ matcher: 'Bash|PowerShell', hooks: [{ type: 'command', command, timeout: 10 }] });
+    let upgraded = false;
+    for (const [event, entries] of Object.entries(require('../src/ab').hooksSettings().hooks)) {
+      const cur = s.hooks[event] || [];
+      if (cur.some(ours)) upgraded = true;
+      s.hooks[event] = [...cur.filter((e) => !ours(e)), ...entries];
+    }
     fs.writeFileSync(file, JSON.stringify(s, null, 2) + '\n');
-    console.log(exists ? `Hook already installed in ${file}` : `Installed PostToolUse hook in ${file}`);
+    console.log(`${upgraded ? 'Updated' : 'Installed'} TokenArmy hooks in ${file}`);
+    console.log('  PostToolUse  Bash/PowerShell output, Grep results, Read re-reads');
+    console.log('  PreCompact + SessionStart  checkpoint that survives compaction');
+    if (flags.statusline) {
+      const cli = path.resolve(__filename).replace(/\\/g, '/');
+      const want = { type: 'command', command: `node "${cli}" statusline`, padding: 0 };
+      if (s.statusLine && !String(s.statusLine.command || '').includes('tokenarmy')) {
+        console.log(`Left your existing statusLine alone (${s.statusLine.command}). Remove it and re-run to use TokenArmy's.`);
+      } else {
+        s.statusLine = want;
+        fs.writeFileSync(file, JSON.stringify(s, null, 2) + '\n');
+        console.log(`Installed status line in ${file}`);
+      }
+    }
     if (flags.skill) {
       const dst = path.join(base, 'skills', 'tokenarmy');
       fs.mkdirSync(dst, { recursive: true });
@@ -188,12 +210,76 @@ const commands = {
     console.log('Restart Claude Code to load it. Disable anytime with TOKENARMY_OFF=1 or add "# raw" to a command.');
   },
 
+  statusline() {
+    // Must never throw or print junk: Claude Code shows whatever we write.
+    let input = {};
+    try {
+      input = JSON.parse(fs.readFileSync(0, 'utf8').replace(/^﻿/, '') || '{}');
+    } catch {
+      /* no/invalid stdin: render with defaults */
+    }
+    process.stdout.write(require('../src/statusline').render(input) + '\n');
+  },
+
   gain() {
     const s = stats.summary();
     if (!s.events) return console.log('No savings recorded yet.');
     console.log(`${s.events} events · ${formatTokens(s.before)} → ${formatTokens(s.after)} tokens · saved ${formatTokens(s.saved)} (−${s.pct}%)`);
-    for (const [k, v] of Object.entries(s.byKind)) console.log(`  ${k.padEnd(12)} ${String(v.events).padStart(5)} events  saved ${formatTokens(v.saved)}`);
+    for (const [k, v] of Object.entries(s.byKind)) console.log(`  ${k.padEnd(16)} ${String(v.events).padStart(5)} events  saved ${formatTokens(v.saved)}`);
+    if (s.expands) console.log(`  raw logs opened by the agent: ${s.expands} (see \`tokenarmy learn\`)`);
+    if (s.checkpoints) console.log(`  checkpoints restored after compaction: ${s.checkpoints}`);
+    if (s.loops) console.log(`  repeated-failure warnings (loop guard): ${s.loops}`);
     console.log(`ledger: ${s.file}`);
+  },
+
+  // Print a saved raw output: by path, by id prefix, or the latest one.
+  expand({ pos }) {
+    const learn = require('../src/learn');
+    let files = [];
+    try {
+      files = fs.readdirSync(learn.RAW_DIR).filter((f) => f.endsWith('.log')).sort();
+    } catch {
+      /* none yet */
+    }
+    const want = pos[0];
+    let file = want && fs.existsSync(want) ? want : null;
+    if (!file) {
+      const hit = want ? files.filter((f) => f.includes(path.basename(want).replace(/\.log$/, ''))) : files;
+      if (!hit.length) throw new Error(want ? `no raw log matching "${want}"` : 'no raw logs yet');
+      file = path.join(learn.RAW_DIR, hit[hit.length - 1]);
+    }
+    process.stdout.write(fs.readFileSync(file, 'utf8'));
+  },
+
+  learn({ flags }) {
+    const learn = require('../src/learn');
+    const rows = stats.readRows() || [];
+    const { families, bypass } = learn.autoBypassed(rows);
+    const fams = Object.entries(families).sort((a, b) => b[1].compressed - a[1].compressed);
+    console.log('What TokenArmy has learned from your sessions (local only):\n');
+    if (!fams.length) console.log('  Nothing yet. Compressions and raw-log opens are recorded as you work.');
+    for (const [f, v] of fams.slice(0, 20)) {
+      console.log(`  ${f.padEnd(24)} compressed ${String(v.compressed).padStart(4)}×  raw log opened ${String(v.expanded).padStart(3)}×${bypass.has(f) ? '  → auto-bypassed (agent kept needing the full output)' : ''}`);
+    }
+    const proposals = learn.mine();
+    if (!proposals.length) {
+      console.log('\nNo new noise filters to propose (need the same command family in 3+ saved raw logs).');
+      return;
+    }
+    console.log(`\nProposed noise filters (lines that repeat across runs and never carry errors):`);
+    for (const p of proposals) {
+      console.log(`\n  ${p.name}  (seen in ${p.evidence.logs} logs, ~${p.evidence.lines} lines)`);
+      for (const e of p.evidence.examples) console.log(`    drop: ${e}`);
+    }
+    if (flags.write) console.log(`\nSaved to ${learn.writeRules(proposals)}. Error/failure lines are always kept. Edit or delete the file to undo.`);
+    else console.log(`\nRun \`tokenarmy learn --write\` to save these to ${learn.USER_FILTERS}.`);
+  },
+
+  async ab({ pos, flags }) {
+    if (!pos[0]) throw new Error('usage: tokenarmy ab <config.json> [--out dir]   (see src/ab.js for the config format)');
+    const r = await require('../src/ab').ab(pos[0], { out: flags.out });
+    console.log(r.md);
+    console.log(`\nAll runs, transcripts and results.json: ${r.dir}`);
   },
 
   help() {
@@ -206,9 +292,13 @@ const commands = {
 
 const [cmd, ...rest] = process.argv.slice(2);
 const fn = commands[cmd] || (cmd === '-v' || cmd === '--version' ? commands.version : commands.help);
-try {
-  fn(args(rest));
-} catch (e) {
+const fail = (e) => {
   console.error(`tokenarmy: ${e.message}`);
   process.exitCode = 1;
+};
+try {
+  const r = fn(args(rest));
+  if (r && typeof r.catch === 'function') r.catch(fail);
+} catch (e) {
+  fail(e);
 }
