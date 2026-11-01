@@ -1,0 +1,31 @@
+{
+  "permissions": {
+    "deny": [
+      "Read(./node_modules/**)",
+      "Read(./dist/**)",
+      "Read(./build/**)",
+      "Read(./target/**)",
+      "Read(./.next/**)",
+      "Read(./coverage/**)",
+      "Read(./**/*.min.js)",
+      "Read(./**/*.min.css)",
+      "Read(./**/*.map)",
+      "Read(./**/*.log)",
+      "Read(./package-lock.json)",
+      "Read(./yarn.lock)",
+      "Read(./pnpm-lock.yaml)",
+      "Read(./poetry.lock)",
+      "Read(./Cargo.lock)"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          { "type": "command", "command": "node \"<ABSOLUTE_PATH_TO>/TokenArmy/hooks/claude-posttooluse.js\"", "timeout": 10 }
+        ]
+      }
+    ]
+  }
+}

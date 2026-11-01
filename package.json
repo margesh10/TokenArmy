@@ -1,0 +1,22 @@
+{
+  "name": "tokenarmy",
+  "version": "0.1.0",
+  "description": "Save tokens everywhere: compress tool output, strip AI slop, pack RAG context to budget, and audit where your agent wastes context.",
+  "author": "Margesh",
+  "license": "MIT",
+  "repository": { "type": "git", "url": "https://github.com/margesh10/TokenArmy.git" },
+  "homepage": "https://github.com/margesh10/TokenArmy#readme",
+  "type": "commonjs",
+  "bin": {
+    "tokenarmy": "bin/tokenarmy.js"
+  },
+  "main": "src/index.js",
+  "files": ["bin", "src", "hooks", "skills", "templates", "docs"],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "test": "node --test test/"
+  },
+  "keywords": ["llm", "tokens", "claude-code", "context-engineering", "rag", "prompt-compression", "ai-agents", "codex", "cost"]
+}
