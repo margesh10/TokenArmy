@@ -156,7 +156,7 @@ All inputs and outputs are in [`bench/fixtures/`](bench/fixtures) and [`bench/ou
 | `pytest -v`: 301 tests, 1 failing | hook / `run` | 8,091 | 357 | **96%** |
 | `docker build` | hook / `run` | 4,902 | 192 | **96%** |
 | `jest`: 241 tests, 1 failing | hook / `run` | 2,725 | 192 | **93%** |
-| RAG: `src/` + `docs/` vs a 1.5k-token pack | `pack` | 18,741 | 1,520 | **92%** |
+| RAG: `src/` + `docs/` vs a 1.5k-token pack | `pack` | 18,732 | 1,515 | **92%** |
 | Reading a 230-line source file | `outline` | 3,213 | 376 | **88%** |
 | `git log`: 60 commits | hook / `run` | 4,173 | 1,010 | **76%** |
 | `tsc`: 90 type errors (all locations kept) | hook / `run` | 2,920 | 990 | **66%** |
@@ -229,19 +229,18 @@ Plus a terse-output skill, [`skills/tokenarmy/SKILL.md`](skills/tokenarmy/SKILL.
 
 ## 🥊 How it compares
 
-These tools work on different layers, and several combine well with TokenArmy.
+The common ways to save tokens, and what TokenArmy does differently:
 
-| | Layer | Mechanism | Needs ML model | Agents |
-|---|---|---|---|---|
-| **TokenArmy** | Tool output, memory files, retrieval, file reads, setup audit | Deterministic filters, BM25 + MMR packing, import graph | No | Claude Code hook; any agent via `run` |
-| [rtk](https://github.com/rtk-ai/rtk) | Tool output | Rust CLI proxy; PreToolUse hook rewrites commands | No | Claude Code and others |
-| [LLMLingua](https://www.microsoft.com/en-us/research/project/llmlingua/) (Microsoft) | Prompt input | Small LM scores and drops low-information tokens | Yes | Library (LangChain, LlamaIndex) |
-| [caveman](https://github.com/JuliusBrussee/caveman) | Model output | Terse-speech skill | No | Claude Code, Codex |
-| [i-have-adhd](https://github.com/ayghri/i-have-adhd) | Model output | Action-first formatting rules | No | Claude Code |
-| [ponytail](https://github.com/DietrichGebert/ponytail) | Generated code | Reuse-before-write decision hierarchy | No | Claude Code, Codex and others |
-| [stop-slop](https://github.com/hardikpandya/stop-slop) | Prose output | Banned-phrase skill | No | Claude |
+| Approach | What it targets | Trade-off | TokenArmy's take |
+|---|---|---|---|
+| **Command-rewriting proxy** | Tool output | Rewrites what the agent runs, often auto-approving it | Compresses *after* the command runs; permissions untouched, raw output kept |
+| **Learned prompt compression** | Prompt input | Needs a model to run, and can drop facts silently | Deterministic rules; code, paths, numbers and errors are never touched |
+| **Terse-output instructions** | Model replies | Output is a small share of a session's tokens | Included as a skill, but most savings target input |
+| **Banned-phrase lists** | Prose style | Only rewrites prose; doesn't save context | Scores slop per 100 words and removes it from always-loaded files |
+| **Fixed top-k RAG** | Retrieval | Wastes tokens on easy queries, starves hard ones | Packs to a token *budget* with duplicates removed |
+| **Usage dashboards** | Visibility | Shows spend after it happens | `audit` finds the leak before it costs anything |
 
-**Combined stack:** TokenArmy for input, plus a terse-output skill for output, plus ponytail-style "write less code" rules. Output tokens are usually a small share of a session's volume. The biggest wins are on the input side.
+Output tokens are usually a small share of a session's volume. The biggest wins are on the input side.
 
 ## 🗺️ Roadmap
 
@@ -262,4 +261,4 @@ PRs welcome, especially new command filters with real-world fixtures. See [CONTR
 
 ## License
 
-MIT © 2026 **Margesh**. Prior art credited above. Savings figures quoted for other projects are their own claims.
+MIT © 2026 **Margesh**.

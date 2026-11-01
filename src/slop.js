@@ -2,7 +2,7 @@
 // AI-slop detector + remover.
 // Slop costs tokens twice: once when the model writes it, and again every
 // turn it sits in context (CLAUDE.md, docs, chat history, summaries).
-// Scoring follows the "markers per 100 words" approach (cf. slop-detector),
+// Scoring counts slop markers per 100 words;
 // removal is conservative: only phrases that carry zero information.
 
 // Whole sentences/clauses that can be deleted outright.

@@ -105,9 +105,9 @@
       "id": "rag",
       "label": "RAG: src+docs vs 1.5k pack",
       "tool": "pack",
-      "before": 18741,
-      "after": 1520,
-      "saved": 17221,
+      "before": 18732,
+      "after": 1515,
+      "saved": 17217,
       "pct": 92,
       "linesBefore": 1162,
       "linesAfter": 97

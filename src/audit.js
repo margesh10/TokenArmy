@@ -89,7 +89,7 @@ function audit(root = process.cwd()) {
 
   // 5. Hooks: is output compression wired?
   const allHooks = JSON.stringify([settings.hooks, (readJson(path.join(home, '.claude', 'settings.json')) || {}).hooks]);
-  if (!/tokenarmy|rtk/i.test(allHooks)) add('high', 'hooks', 'No tool-output compression hook installed', 'Shell output (tests, installs, builds, git) is usually the single largest input-token sink in agent loops: it is appended to history and resent on every following turn.', 'tokenarmy init  (adds a PostToolUse hook that compresses Bash output; it never rewrites or auto-approves commands)', 0);
+  if (!/tokenarmy|posttooluse/i.test(allHooks)) add('high', 'hooks', 'No tool-output compression hook installed', 'Shell output (tests, installs, builds, git) is usually the single largest input-token sink in agent loops: it is appended to history and resent on every following turn.', 'tokenarmy init  (adds a PostToolUse hook that compresses Bash output; it never rewrites or auto-approves commands)', 0);
 
   const order = { high: 0, medium: 1, info: 2 };
   findings.sort((a, b) => order[a.severity] - order[b.severity] || b.tokens - a.tokens);

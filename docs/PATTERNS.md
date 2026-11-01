@@ -77,11 +77,11 @@ Code is a graph (imports, calls, inheritance), so relevance follows **hop distan
 
 ## 8. Write less code
 
-The cheapest tokens are the lines never generated, and never re-read in every later turn. Follow this order: YAGNI → reuse existing code → stdlib → platform built-ins → a dependency → new code (the ponytail ordering).
+The cheapest tokens are the lines never generated, and never re-read in every later turn. Follow this order: YAGNI → reuse existing code → stdlib → platform built-ins → a dependency → new code.
 
 ## 9. Future patterns to watch
 
-- **Learned compression** (LLMLingua-2-style token classifiers) running locally before every API call.
+- **Learned compression:** small local token-classifier models that drop low-information tokens before every API call.
 - **Tool search / deferred schemas** as the default for MCP: load a tool's schema only when the agent asks for it.
 - **Code-execution tool use:** the agent writes a script that calls many tools, so only the final result enters context.
 - **KV-cache-aware context managers** that evict and compact while preserving the cached prefix.
@@ -89,4 +89,4 @@ The cheapest tokens are the lines never generated, and never re-read in every la
 - **Per-turn context diffing:** send only what changed in a file since the agent last saw it.
 
 ---
-Measure before and after: `tokenarmy gain`, Claude Code's `/context`, and ccusage on your own logs. Most published savings figures (including those of the tools credited in the README) are self-reported.
+Measure before and after: `tokenarmy gain`, Claude Code's `/context`, and your provider's usage logs. Most published savings figures are self-reported, so measure your own.

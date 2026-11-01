@@ -2,7 +2,7 @@
 'use strict';
 // Claude Code PostToolUse hook: compress Bash output before Claude sees it.
 //
-// Why PostToolUse (and not command rewriting like rtk's PreToolUse hook)?
+// Why PostToolUse (and not rewriting commands in a PreToolUse hook)?
 //   - The command the user approved is exactly the command that runs.
 //   - We never return permissionDecision:"allow", so no permission prompt is bypassed.
 //   - The full raw output is saved to ~/.tokenarmy/raw/ and its path is shown,
@@ -29,7 +29,7 @@ function main(raw) {
   } catch {
     return;
   }
-  if (evt.tool_name !== 'Bash') return;
+  if (evt.tool_name !== 'Bash' && evt.tool_name !== 'PowerShell') return;
   const cmd = (evt.tool_input && evt.tool_input.command) || '';
   if (/#\s*raw\b/.test(cmd)) return;
   const res = evt.tool_response || {};

@@ -3,7 +3,7 @@
 'use strict';
 // Claude Code PostToolUse hook: compress Bash output before Claude sees it.
 //
-// Why PostToolUse (and not command rewriting like rtk's PreToolUse hook)?
+// Why PostToolUse (and not rewriting commands in a PreToolUse hook)?
 //   - The command the user approved is exactly the command that runs.
 //   - We never return permissionDecision:"allow", so no permission prompt is bypassed.
 //   - The full raw output is saved to ~/.tokenarmy/raw/ and its path is shown,
@@ -47,7 +47,7 @@ Output tokens cost 3-5× more each but are usually only 1-5% of a session's volu
 ### docs/PATTERNS.md:78-81
 ## 8. Write less code
 
-The cheapest tokens are the lines never generated, and never re-read in every later turn. Follow this order: YAGNI → reuse existing code → stdlib → platform built-ins → a dependency → new code (the ponytail ordering).
+The cheapest tokens are the lines never generated, and never re-read in every later turn. Follow this order: YAGNI → reuse existing code → stdlib → platform built-ins → a dependency → new code.
 
 ### hooks/claude-posttooluse.js:54-81
 fs.writeFileSync(rawPath, `$ ${cmd}\n--- stdout ---\n${stdout}\n--- stderr ---\n${stderr}`);
@@ -87,7 +87,7 @@ process.stdin.on('end', () => {
 
   // 5. Hooks: is output compression wired?
   const allHooks = JSON.stringify([settings.hooks, (readJson(path.join(home, '.claude', 'settings.json')) || {}).hooks]);
-  if (!/tokenarmy|rtk/i.test(allHooks)) add('high', 'hooks', 'No tool-output compression hook installed', 'Shell output (tests, installs, builds, git) is usually the single largest input-token sink in agent loops: it is appended to history and resent on every following turn.', 'tokenarmy init  (adds a PostToolUse hook that compresses Bash output; it never rewrites or auto-approves commands)', 0);
+  if (!/tokenarmy|posttooluse/i.test(allHooks)) add('high', 'hooks', 'No tool-output compression hook installed', 'Shell output (tests, installs, builds, git) is usually the single largest input-token sink in agent loops: it is appended to history and resent on every following turn.', 'tokenarmy init  (adds a PostToolUse hook that compresses Bash output; it never rewrites or auto-approves commands)', 0);
 
 ### src/squeeze.js:9-13
 function stripAnsi(s) {

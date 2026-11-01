@@ -4,7 +4,7 @@
 //   1 safe     – whitespace, duplicate lines, minify JSON blocks, strip HTML comments
 //   2 standard – + deslop prose, collapse markdown decoration, shorten boilerplate
 //   3 aggressive – + drop articles/stopwords in prose bullets (telegraphic style,
-//                  the "caveman" idea applied to INPUT, which is billed every turn)
+//                  applied to INPUT, which is billed every turn)
 // Code blocks, URLs, paths, numbers and quoted strings are never altered.
 
 const { deslop, tidy } = require('./slop');

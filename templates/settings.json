@@ -21,7 +21,7 @@
   "hooks": {
     "PostToolUse": [
       {
-        "matcher": "Bash",
+        "matcher": "Bash|PowerShell",
         "hooks": [
           { "type": "command", "command": "node \"<ABSOLUTE_PATH_TO>/TokenArmy/hooks/claude-posttooluse.js\"", "timeout": 10 }
         ]

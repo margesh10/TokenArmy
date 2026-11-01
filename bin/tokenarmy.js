@@ -176,7 +176,7 @@ const commands = {
     s.hooks = s.hooks || {};
     s.hooks.PostToolUse = s.hooks.PostToolUse || [];
     const exists = JSON.stringify(s.hooks.PostToolUse).includes('claude-posttooluse.js');
-    if (!exists) s.hooks.PostToolUse.push({ matcher: 'Bash', hooks: [{ type: 'command', command, timeout: 10 }] });
+    if (!exists) s.hooks.PostToolUse.push({ matcher: 'Bash|PowerShell', hooks: [{ type: 'command', command, timeout: 10 }] });
     fs.writeFileSync(file, JSON.stringify(s, null, 2) + '\n');
     console.log(exists ? `Hook already installed in ${file}` : `Installed PostToolUse hook in ${file}`);
     if (flags.skill) {
