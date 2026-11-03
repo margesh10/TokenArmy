@@ -20,6 +20,36 @@ function readJson(p) {
   }
 }
 
+const MIN_USAGE_SESSIONS = 5;
+
+// Which MCP servers were actually called in this project's most recent sessions.
+// Claude Code keeps transcripts in ~/.claude/projects/<cwd with non-alphanumerics as "-">/.
+function mcpUsage(root, home, maxSessions = 30) {
+  const dir = path.join(home, '.claude', 'projects', path.resolve(root).replace(/[^A-Za-z0-9]/g, '-'));
+  let files;
+  try {
+    files = fs
+      .readdirSync(dir)
+      .filter((f) => f.endsWith('.jsonl'))
+      .map((f) => ({ f: path.join(dir, f), t: fs.statSync(path.join(dir, f)).mtimeMs }))
+      .sort((a, b) => b.t - a.t)
+      .slice(0, maxSessions);
+  } catch {
+    return null;
+  }
+  const used = new Set();
+  for (const { f } of files) {
+    let txt = '';
+    try {
+      txt = fs.readFileSync(f, 'utf8');
+    } catch {
+      continue;
+    }
+    for (const m of txt.matchAll(/"type":"tool_use","id":"[^"]*","name":"mcp__(.+?)__[^"]+"/g)) used.add(m[1]);
+  }
+  return { sessions: files.length, used };
+}
+
 function audit(root = process.cwd()) {
   const findings = [];
   const add = (severity, area, title, detail, fix, tokens = 0) => findings.push({ severity, area, title, detail, fix, tokens });
@@ -52,6 +82,14 @@ function audit(root = process.cwd()) {
   }
   if (servers.size >= 4) add('high', 'mcp', `${servers.size} MCP servers configured`, `Servers: ${[...servers].join(', ')}. Large servers (GitHub, Playwright) can add 10k-40k tokens of tool schemas each when not lazily loaded.`, 'Disable servers per-project you do not use there; prefer CLIs (gh, psql) the agent already knows; keep tool search / deferred loading on.', servers.size * 3000);
   else if (servers.size) add('info', 'mcp', `${servers.size} MCP server(s): ${[...servers].join(', ')}`, 'Fine if each is used in this project.', 'Run /context in Claude Code to see the real per-server cost.', 0);
+
+  // 2b. MCP servers this project never uses (TokenEconomizer's tool pruning, as advice only):
+  //     count mcp__<server>__ tool calls in this project's recent Claude Code transcripts.
+  const usage = mcpUsage(root, home);
+  if (usage && usage.sessions >= MIN_USAGE_SESSIONS) {
+    const unused = [...servers].filter((s) => !usage.used.has(s.replace(/[^A-Za-z0-9_-]/g, '_')));
+    if (unused.length) add('medium', 'mcp', `${unused.length} MCP server(s) unused in the last ${usage.sessions} sessions here: ${unused.join(', ')}`, 'Their tool definitions are offered in every session of this project, and none of their tools was called.', 'Disable them for this project (`/mcp` in Claude Code, or remove them from .mcp.json). You can turn one back on any time.', 0);
+  }
 
   // 3. Skills / agents descriptions (loaded each session).
   for (const dir of [path.join(root, '.claude', 'skills'), path.join(home, '.claude', 'skills')]) {
@@ -96,4 +134,4 @@ function audit(root = process.cwd()) {
   return { root, memoryTokens, mcpServers: [...servers], findings, perTurnSavings: findings.reduce((a, f) => a + (f.tokens || 0), 0) };
 }
 
-module.exports = { audit };
+module.exports = { audit, mcpUsage };

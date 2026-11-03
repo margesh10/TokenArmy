@@ -40,11 +40,13 @@ function summary(opts = {}) {
   let rows = readRows();
   if (!rows) return { events: 0, before: 0, after: 0, saved: 0, pct: 0, byKind: {}, expands: 0, checkpoints: 0, file: FILE };
   if (opts.session) rows = rows.filter((r) => r.session === opts.session);
-  // Non-saving events: the agent opening a raw log, checkpoint restores.
+  // Non-saving events: the agent opening a raw log, checkpoint restores, loop notes, facts stated.
   const expands = rows.filter((r) => r.kind === 'expand').length;
   const checkpoints = rows.filter((r) => r.kind === 'checkpoint').length;
   const loops = rows.filter((r) => r.kind === 'loop').length;
-  rows = rows.filter((r) => r.kind !== 'expand' && r.kind !== 'checkpoint' && r.kind !== 'loop');
+  const factStarts = rows.filter((r) => r.kind === 'facts').length;
+  const INFO = new Set(['expand', 'checkpoint', 'loop', 'facts']);
+  rows = rows.filter((r) => !INFO.has(r.kind));
   const byKind = {};
   let before = 0;
   let after = 0;
@@ -56,7 +58,7 @@ function summary(opts = {}) {
     byKind[k].events++;
     byKind[k].saved += (r.before || 0) - (r.after || 0);
   }
-  return { events: rows.length, before, after, saved: before - after, pct: before ? Math.round(((before - after) / before) * 100) : 0, byKind, expands, checkpoints, loops, file: FILE };
+  return { events: rows.length, before, after, saved: before - after, pct: before ? Math.round(((before - after) / before) * 100) : 0, byKind, expands, checkpoints, loops, factStarts, file: FILE };
 }
 
 module.exports = { record, summary, readRows, FILE };

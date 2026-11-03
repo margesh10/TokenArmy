@@ -23,13 +23,6 @@ const crypto = require('crypto');
 const { squeeze, stripAnsi, collapseCarriageReturns, squashBlankLines } = require('../src/squeeze');
 const { estimateTokens } = require('../src/tokens');
 
-### docs/PATTERNS.md:1-6
-# Token engineering patterns
-
-Ways to spend fewer tokens on context, retrieval, prompts and agent loops. Each pattern says what it costs, why it works and how to apply it.
-
----
-
 ### docs/PATTERNS.md:7-20
 ## 1. The cost model you are actually paying
 
@@ -45,26 +38,30 @@ Two consequences:
 
 Output tokens cost 3-5× more each but are usually only 1-5% of a session's volume. Terse-output skills help cost a little; input discipline helps a lot.
 
-### src/audit.js:84-92
-}
-  const lockOrGen = files.filter((f) => /(package-lock\.json|yarn\.lock|pnpm-lock\.yaml|poetry\.lock|Cargo\.lock|\.min\.(js|css)|\.map|\.log)$/i.test(f));
-  const settings = readJson(path.join(root, '.claude', 'settings.json')) || {};
-  const deny = ((settings.permissions || {}).deny || []).join(' ');
-  if (lockOrGen.length && !/lock|\.log|min\./i.test(deny)) add('medium', 'files', `${lockOrGen.length} lock/minified/log files with no Read deny rule`, lockOrGen.slice(0, 5).map((f) => path.relative(root, f)).join(', '), 'Copy the deny list from templates/settings.json into .claude/settings.json.', 0);
-
-  // 5. Hooks: is output compression wired?
+### src/audit.js:127-136
+// 5. Hooks: is output compression wired?
   const allHooks = JSON.stringify([settings.hooks, (readJson(path.join(home, '.claude', 'settings.json')) || {}).hooks]);
   if (!/tokenarmy|posttooluse/i.test(allHooks)) add('high', 'hooks', 'No tool-output compression hook installed', 'Shell output (tests, installs, builds, git) is usually the single largest input-token sink in agent loops: it is appended to history and resent on every following turn.', 'tokenarmy init  (adds a PostToolUse hook that compresses Bash output; it never rewrites or auto-approves commands)', 0);
 
-### src/learn.js:79-86
-function isBypassed(command, filters) {
-  return (filters.bypass || []).some((b) => {
-    const r = re(b);
-    return r && r.test(command);
-  });
+  const order = { high: 0, medium: 1, info: 2 };
+  findings.sort((a, b) => order[a.severity] - order[b.severity] || b.tokens - a.tokens);
+  return { root, memoryTokens, mcpServers: [...servers], findings, perTurnSavings: findings.reduce((a, f) => a + (f.tokens || 0), 0) };
 }
 
-// Families whose compressed output the agent keeps opening in full.
+### src/filters.js:55-68
+function packageInstall(out) {
+  // npm/pnpm/yarn/pip install: keep summary, warnings, errors.
+  const lines = out.split('\n');
+  const keep = lines.filter(
+    (l) =>
+      SIGNAL.test(l) ||
+      /^(added|removed|changed|up to date|audited|found \d+|\d+ packages?|Successfully installed|Requirement already satisfied: \S+$|Done in|Packages: |Progress: resolved .* done)/i.test(l.trim()) ||
+      /vulnerabilit/i.test(l)
+  );
+  const dedup = [...new Set(keep.map((l) => l.trim()))];
+  if (!dedup.length) return `install finished (${lines.length} lines of output, no warnings/errors)`;
+  return dedup.join('\n');
+}
 
 ### src/learn.js:100-113
 function rawLogCommand(file) {
@@ -81,6 +78,9 @@ function rawLogCommand(file) {
 }
 
 // Does this tool call open one of our raw logs? Returns the original command if so.
+
+### src/learn.js:194-195
+module.exports = { family, loadFilters, applyUserRules, isBypassed, autoBypassed, expandTarget, mine, writeRules, RAW_DIR, USER_FILTERS };
 
 ### src/search.js:1-8
 'use strict';

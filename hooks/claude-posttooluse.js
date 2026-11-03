@@ -28,6 +28,9 @@ const { diffLines } = require('../src/diff');
 const stats = require('../src/stats');
 const session = require('../src/session');
 const learn = require('../src/learn');
+const facts = require('../src/facts');
+const { redact } = require('../src/redact');
+const brief = require('../src/brief');
 
 const env = process.env;
 const MIN_TOKENS = +(env.TOKENARMY_MIN_TOKENS || 300); // don't touch small outputs
@@ -45,7 +48,7 @@ function saveRaw(label, body) {
     const dir = path.join(path.dirname(stats.FILE), 'raw');
     fs.mkdirSync(dir, { recursive: true });
     const p = path.join(dir, `${Date.now()}-${crypto.randomBytes(3).toString('hex')}.log`);
-    fs.writeFileSync(p, `$ ${label}\n--- stdout ---\n${body}`);
+    fs.writeFileSync(p, redact(`$ ${label}\n--- stdout ---\n${body}`));
     return p;
   } catch {
     return '';
@@ -79,9 +82,11 @@ function loopNote(evt, cmd, text) {
   cur.n++;
   loops[fam] = cur;
   session.save(evt.session_id, 'loops.json', loops);
-  if (cur.n < 3) return '';
+  // Speak at the 3rd repeat, then only every 3rd after that: a note on every retry is itself noise.
+  if (cur.n < 3 || cur.n % 3 !== 0) return '';
   stats.record({ kind: 'loop', family: fam, session: evt.session_id, cmd: cmd.slice(0, 80), before: 0, after: 0, repeats: cur.n });
-  return `\n[tokenarmy] \`${fam}\` has now failed ${cur.n} times in a row with the same error ("${first.trim().slice(0, 120)}"). Re-running without a different change will fail the same way; step back and check the assumption behind the last fix.`;
+  // Mirror the agent's own actions back and redirect; never tell it to stop (TokenEconomizer's loop-guard rule).
+  return `\n[tokenarmy] \`${fam}\` has failed ${cur.n} times in a row with the same error ("${first.trim().slice(0, 120)}"). Another run without a different change will fail the same way. Keep going, but test a materially different hypothesis: re-read what the failing check expects, and consider a different file or root cause than the one you have been changing.`;
 }
 
 function shell(evt, res) {
@@ -91,6 +96,8 @@ function shell(evt, res) {
   const stdout = res.stdout;
   const stderr = typeof res.stderr === 'string' ? res.stderr : '';
   const loop = loopNote(evt, cmd, `${stdout}\n${stderr}`);
+  facts.observe(evt, cmd, `${stdout}\n${stderr}`);
+  brief.observeCommand(evt, cmd, `${stdout}\n${stderr}`);
   const before = estimateTokens(stdout) + estimateTokens(stderr);
   if (before < MIN_TOKENS) {
     if (loop) emit({ ...res, stdout: stdout + loop });
@@ -149,9 +156,10 @@ function grep(evt, res) {
 }
 
 function read(evt, res) {
-  if (env.TOKENARMY_READ_DEDUPE === '0') return;
   const file = res.file;
   if (res.type !== 'text' || !file || typeof file.content !== 'string') return;
+  brief.observeRead(evt, file.filePath);
+  if (env.TOKENARMY_READ_DEDUPE === '0') return;
   const input = evt.tool_input || {};
   const content = file.content;
   const tokens = estimateTokens(content);
