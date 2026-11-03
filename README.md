@@ -8,7 +8,7 @@ and audit where your AI agent wastes context. Works with Claude Code, Codex, Cur
 [![License: MIT](https://img.shields.io/badge/license-MIT-2a78d6.svg)](LICENSE)
 [![Node ≥ 18](https://img.shields.io/badge/node-%E2%89%A518-2a78d6.svg)](package.json)
 [![Zero dependencies](https://img.shields.io/badge/dependencies-0-2a78d6.svg)](package.json)
-[![Tests](https://img.shields.io/badge/tests-43%20passing-0ca30c.svg)](test/)
+[![Tests](https://img.shields.io/badge/tests-59%20passing-0ca30c.svg)](test/)
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="assets/hero-dark.svg">
@@ -194,7 +194,7 @@ These measure a single command's output before and after, on synthetic but reali
 | `pytest -v`: 301 tests, 1 failing | hook / `run` | 8,091 | 357 | **96%** |
 | `docker build` | hook / `run` | 4,902 | 192 | **96%** |
 | `jest`: 241 tests, 1 failing | hook / `run` | 2,725 | 192 | **93%** |
-| RAG: `src/` + `docs/` vs a 1.5k-token pack | `pack` | 37,343 | 1,535 | **96%** |
+| RAG: `src/` + `docs/` vs a 1.5k-token pack | `pack` | 43,674 | 1,541 | **96%** |
 | Reading a 230-line source file | `outline` | 3,213 | 376 | **88%** |
 | `git log`: 60 commits | hook / `run` | 4,173 | 1,010 | **76%** |
 | `tsc`: 90 type errors (all locations kept) | hook / `run` | 2,920 | 990 | **66%** |
@@ -229,26 +229,40 @@ flowchart LR
     C -.-> L[("gain ledger")]
 ```
 
-Nine layers, each targeting a different place tokens leak:
+Twelve layers, each targeting a different place tokens leak:
 
 | Layer | Where tokens leak | TokenArmy |
 |---|---|---|
-| **Tool output** | Tests, installs, builds, git: resent every turn | PostToolUse hook on Bash/PowerShell, `run`, `squeeze`. Filters for test runners, installs, tsc/eslint, ruff/flake8 (grouped by rule), cargo/maven/gradle progress, docker build, `git status/log/diff/push/pull`, `docker ps`/`kubectl get` (unhealthy rows first) |
+| **Tool output** | Tests, installs, builds, git: resent every turn | PostToolUse hook on Bash/PowerShell, `run`, `squeeze`. Filters for test runners (jest, vitest, pytest, go test, cargo test/nextest, bun, deno, playwright…), installs, tsc/eslint/mypy, ruff/flake8 (grouped by rule), cargo/maven/gradle progress, terraform/tofu plan, docker build, `git status/log/diff/push/pull`, `docker ps`/`kubectl get` (unhealthy rows first) |
 | **JSON output** | `curl`, `gh api`, `kubectl -o json`, `aws`: hundreds of near-identical objects | Arrays of objects become one header + rows; long arrays/strings trimmed with counts; items mentioning errors always shown |
-| **Retry loops** | Re-running the same failing command | From the 3rd identical failure in a session, a one-line note tells the agent to change approach |
+| **Hidden lines** | A bare "200 lines omitted" makes the agent open the raw log to check | Every elision marker says what the hidden lines had in common: `INFO×200; status: 200×196 404×4; ms=3..812; no problem lines` |
+| **Retry loops** | Re-running the same failing command | At the 3rd identical failure in a session (then every 3rd), a one-line note redirects the agent to a different hypothesis. It never tells it to stop |
+| **Rediscovery** | Every session re-learns how to run the tests, which files matter, and that `pytest` is missing here but `python -m pytest` works | A project brief at session start: commands that ran clean, files read in most sessions, failures still open, and environment facts, each with its session count ([below](#-it-learns-from-your-sessions-locally)) |
 | **Search output** | Hundreds of grep/rg hits, minified lines | Grep tool + grep/rg/Select-String grouped by file with counts; error hits always shown |
 | **File re-reads** | Reading the same file again after an edit | Unchanged → a one-line note; changed → only the diff. Reset at every compaction |
 | **Compaction** | The summary loses exact files, asks and todos | PreCompact checkpoint, handed back verbatim by SessionStart |
 | **Memory files** | `CLAUDE.md` / `AGENTS.md`: sent with every request | `compress`, `slop --fix`, [`templates/`](templates) |
 | **File reads** | Reading 2,000 lines to change 3 | `outline`, Read-deny rules for lock, log and dist files |
 | **Retrieval** | Top-k chunks full of near-duplicates | `pack` (structure-aware chunks → BM25 → MMR → token budget) and `graph` (import-graph neighbourhood) |
-| **Setup** | MCP schemas, skill descriptions, cache-busting timestamps | `audit` |
+| **Setup** | MCP schemas, skill descriptions, cache-busting timestamps | `audit`, including MCP servers no session of this project has called |
 
 Plus a terse-output skill, [`skills/tokenarmy/SKILL.md`](skills/tokenarmy/SKILL.md), for the model's own replies.
 
 ### 🔁 It learns from your sessions (locally)
 
 - **It notices when it cut too much.** If the agent opens a raw log TokenArmy saved, that compression hid something it needed. Command families the agent keeps expanding are automatically left alone from then on.
+- **It remembers how this repository runs.** When a command fails to resolve (`pytest: command not found`, `The term 'tsc' is not recognized`, `No module named pytest`) and another form of the same tool works later in the session, that pair becomes a candidate. Seen in 2 sessions, it is stated at every session start: "`pytest` fails here (command not found); `python -m pytest` works." At most 4 lines, ~150 tokens. A fact retires by itself when the bare form works in 2 sessions in a row. `tokenarmy facts` lists them; `--clear` forgets them. (After TokenEconomizer's micro-skills.)
+- **It briefs each new session.** A new session usually spends its first turns working out how to run the tests and where the code that matters lives. TokenArmy states what earlier sessions here already found, under ~220 tokens, every line with its evidence (after Hindsight's mental models and proof counts, but local and with no LLM):
+
+```
+# Project brief from earlier sessions in this repository (TokenArmy; numbers = sessions)
+- Commands that ran clean here: `npm test` (6), `npx tsc --noEmit` (4)
+- Files read in most sessions: src/filters.js (5), hooks/claude-posttooluse.js (4)
+- Still failing at the end of earlier sessions: `npm run lint`: "src/a.ts:3:1 error 'x' is unused" (3)
+- `pytest` fails here (command not found); `python -m pytest` works.
+```
+
+  Only test/build/lint/typecheck commands are counted. A file needs 3 sessions; a failure needs 3 sessions *and* to have been the latest result of that command, so a fixed failure drops out by itself. `tokenarmy brief` shows it; `--clear` forgets it.
 - **It learns your noise.** `tokenarmy learn` finds lines that repeat across your saved outputs and never carry errors, and proposes filters; `--write` saves them to `~/.tokenarmy/filters.json`. Add your own per project in `.tokenarmy/filters.json`:
 
 ```json
@@ -274,6 +288,8 @@ Filter rules can never drop an error or failure line. Everything stays on your m
 | `tokenarmy graph <dir> --seed <file>` | Related files by import hops (graph-RAG for code) |
 | `tokenarmy count [file]` · `gain` | Estimates tokens · shows your local savings ledger |
 | `tokenarmy expand [id]` | Prints a saved raw output (the latest if no id) |
+| `tokenarmy brief [dir] [--clear]` | The project brief stated at session start (commands that work, hot files, open failures, facts) |
+| `tokenarmy facts [dir] [--clear]` | Environment facts learned in this repository, and the block stated at session start |
 | `tokenarmy learn [--write]` | Shows auto-bypassed commands and proposes noise filters mined from your raw logs |
 | `tokenarmy ab <config.json>` | Controlled A/B on a real task: TokenArmy off vs on, interleaved, billed tokens from transcripts, success checked. Example: [`bench/ab/example.json`](bench/ab/example.json) |
 
@@ -285,7 +301,8 @@ Filter rules can never drop an error or failure line. Everything stays on your m
 - **Code is never changed.** Slop removal and prompt compression mask fenced code, inline code, URLs and quoted strings first.
 - **Respects the agent's choices.** If a command already narrows its output (`| tail`, `| grep`, `sed -n`, `Select-Object -First`…), only lossless cleanup is applied: colour codes and carriage-return spam go, no lines are cut.
 - **Re-reads are conservative.** A re-read is only shortened when the same agent read the same range of the same file within the last 20 minutes and no compaction has happened since. Reading with an explicit `limit` always returns the full file.
-- **Easy to skip.** Add `# raw` to a command, set `TOKENARMY_OFF=1`, or turn off one layer: `TOKENARMY_READ_DEDUPE=0`, `TOKENARMY_SEARCH=0`, `TOKENARMY_JSON=0`, `TOKENARMY_LOOPGUARD=0`, `TOKENARMY_CHECKPOINT=0`.
+- **No secrets on disk.** Raw outputs and checkpoints are scanned before they are written: API keys, tokens, private keys, JWTs, passwords in URLs and `*_SECRET=`/`*_PASSWORD=` values become `[REDACTED:<kind>]`. What the agent sees is not changed.
+- **Easy to skip.** Add `# raw` to a command, set `TOKENARMY_OFF=1`, or turn off one layer: `TOKENARMY_READ_DEDUPE=0`, `TOKENARMY_SEARCH=0`, `TOKENARMY_JSON=0`, `TOKENARMY_LOOPGUARD=0`, `TOKENARMY_CHECKPOINT=0`, `TOKENARMY_FACTS=0`, `TOKENARMY_BRIEF=0`, `TOKENARMY_REDACT=0`.
 - **Local only.** No network calls and no telemetry. The savings ledger is a local JSONL file.
 
 ## 💪 Why TokenArmy
@@ -298,7 +315,7 @@ Filter rules can never drop an error or failure line. Everything stays on your m
 6. **Covers the whole session, not just command output.** Command output, search results, JSON responses, file re-reads, retry loops and compaction, plus `audit`, memory-file compression, slop removal, budgeted RAG `pack`, import `graph` and a live cost status line, in one tool.
 7. **It learns from you, locally.** It notices which compressions you needed to undo and which noise repeats in your projects, and adapts. Nothing leaves your machine.
 8. **Measure it yourself.** `tokenarmy ab` runs your own task with TokenArmy off and on, in throwaway copies of your project, and reports billed tokens and success rate from Claude's own transcripts, run-to-run noise included.
-9. **Small enough to read, free to use.** MIT, about 2,500 lines of dependency-free Node. You can audit all of it in an afternoon. Works the same on Windows PowerShell as on bash.
+9. **Small enough to read, free to use.** MIT, about 3,000 lines of dependency-free Node. You can audit all of it in an afternoon. Works the same on Windows PowerShell as on bash.
 
 ## 🗺️ Roadmap
 
@@ -310,7 +327,12 @@ Filter rules can never drop an error or failure line. Everything stays on your m
 - [x] `tokenarmy ab`: reproducible real-task benchmark
 - [ ] Publish to npm (`npm i -g tokenarmy`)
 - [ ] A/B results on more public projects (noisy builds, large monorepos, long sessions)
-- [ ] Filters for `cargo test`, `go test`, `mvn`, `gradle` and `terraform plan`
+- [x] Filters for `cargo test`, `go test`, `gradle` and `terraform plan`
+- [x] Environment facts learned across sessions
+- [x] Elision markers that describe what they hide
+- [ ] `mvn test` (surefire) filter
+- [x] Project brief at session start: test/build commands that work, open failures, hot files (local, no LLM)
+- [ ] Decisions from git history in the brief (commit messages that settle a rule, like Hindsight's coding-agent memory)
 - [ ] Optional exact token counts via a real tokenizer when one is installed
 - [ ] Codex and Gemini CLI native hooks
 

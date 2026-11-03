@@ -1,5 +1,5 @@
 {
-  "generated": "2026-11-01",
+  "generated": "2026-11-03",
   "estimator": "tokenarmy heuristic (±15% vs BPE)",
   "rows": [
     {
@@ -105,11 +105,11 @@
       "id": "rag",
       "label": "RAG: src+docs vs 1.5k pack",
       "tool": "pack",
-      "before": 37343,
-      "after": 1535,
-      "saved": 35808,
+      "before": 43674,
+      "after": 1541,
+      "saved": 42133,
       "pct": 96,
-      "linesBefore": 2302,
+      "linesBefore": 2660,
       "linesAfter": 92
     }
   ],

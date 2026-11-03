@@ -35,6 +35,8 @@ Usage: tokenarmy <command> [args]
   gain                               Local savings ledger
   expand [id|path]                   Print a saved raw output (latest if no id)
   learn [--write]                    What it learned: auto-bypassed commands, proposed noise filters
+  brief [dir] [--clear]              The project brief stated at session start
+  facts [dir] [--clear]              Environment facts learned here (e.g. "pytest fails; python -m pytest works")
   ab <config.json> [--out dir]       Controlled A/B benchmark on a real task (on vs off, billed tokens)
   statusline                         Status line renderer (reads Claude Code's JSON on stdin)
   help | version
@@ -229,7 +231,36 @@ const commands = {
     if (s.expands) console.log(`  raw logs opened by the agent: ${s.expands} (see \`tokenarmy learn\`)`);
     if (s.checkpoints) console.log(`  checkpoints restored after compaction: ${s.checkpoints}`);
     if (s.loops) console.log(`  repeated-failure warnings (loop guard): ${s.loops}`);
+    if (s.factStarts) console.log(`  sessions started with learned environment facts: ${s.factStarts} (see \`tokenarmy facts\`)`);
     console.log(`ledger: ${s.file}`);
+  },
+
+  // The project brief stated at session start (src/brief.js + src/facts.js).
+  brief({ pos, flags }) {
+    const brief = require('../src/brief');
+    const dir = path.resolve(pos[0] || (typeof flags.clear === 'string' ? flags.clear : process.cwd()));
+    if (flags.clear) return console.log(brief.clear(dir) ? `Forgot the brief for ${dir} (facts are kept; \`tokenarmy facts --clear\` forgets them).` : `No brief stored for ${dir}.`);
+    const block = brief.render(dir, require('../src/facts').lines(dir));
+    console.log(block || 'Nothing yet. The brief fills in as sessions here run tests/builds and read files.');
+    console.log(`\nStored in ${brief.file(dir)}. Local only. TOKENARMY_BRIEF=0 turns it off.`);
+  },
+
+  // Environment facts learned in this repository (src/facts.js).
+  facts({ pos, flags }) {
+    const facts = require('../src/facts');
+    const dir = path.resolve(pos[0] || (typeof flags.clear === 'string' ? flags.clear : process.cwd()));
+    if (flags.clear) return console.log(facts.clear(dir) ? `Forgot every fact for ${dir}.` : `No facts stored for ${dir}.`);
+    const all = facts.list(dir);
+    console.log(`Environment facts for ${dir} (local only):\n`);
+    if (!all.length) {
+      console.log('  None yet. A fact forms when a command fails to resolve (`pytest: command not found`)');
+      console.log(`  and another form of it works later in the same session, in ${facts.MIN_SESSIONS}+ sessions.`);
+      return;
+    }
+    for (const f of all) console.log(`  [${f.state.padEnd(9)}] ${facts.claim(f)}  (${f.sessions.length} session${f.sessions.length === 1 ? '' : 's'})`);
+    const block = facts.render(dir);
+    console.log(block ? `\nStated at the start of every session here:\n\n${block}` : `\nNothing active yet: a candidate needs ${facts.MIN_SESSIONS} sessions of evidence.`);
+    console.log(`\nStored in ${facts.file(dir)}. \`tokenarmy facts --clear\` forgets them; TOKENARMY_FACTS=0 turns this off.`);
   },
 
   // Print a saved raw output: by path, by id prefix, or the latest one.

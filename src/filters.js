@@ -75,13 +75,20 @@ function testRunner(out) {
   const out2 = [];
   let inFailure = 0;
   let passed = 0;
+  // Lines since the last passing test. go test prints a failure's details BEFORE its
+  // "--- FAIL" line (cargo and pytest print some context before too), so they are held here
+  // and kept when a failure marker follows, dropped when a pass follows.
+  let pending = [];
   for (const l of lines) {
     if (PASS.test(l) && !/^\s*(not ok|FAIL)/.test(l)) {
       passed++;
       inFailure = 0;
+      pending = [];
       continue;
     }
     if (SIGNAL.test(l) || /^\s*(●|✕|✖|FAIL|FAILED|---\s*FAIL|not ok)/.test(l)) {
+      out2.push(...pending.slice(-25));
+      pending = [];
       inFailure = 25;
       out2.push(l);
       continue;
@@ -93,7 +100,7 @@ function testRunner(out) {
     if (inFailure > 0) {
       out2.push(l);
       inFailure--;
-    }
+    } else if (l.trim()) pending.push(l);
   }
   if (passed) out2.unshift(`[tokenarmy] ${passed} passing test line${passed === 1 ? '' : 's'} hidden`);
   return out2.join('\n');
@@ -115,7 +122,8 @@ function listing(out) {
 function compilerDiagnostics(out) {
   // tsc / eslint / cargo build / gcc: group repeated identical diagnostics.
   const lines = out.split('\n');
-  const diag = /^(.+?)[(:](\d+)[,:](\d+)\)?:?\s*(error|warning)\s*(\w+)?:?\s*(.*)$/i;
+  // file:line:col (tsc, eslint, gcc) or file:line (mypy: "app.py:12: error: … [assignment]").
+  const diag = /^(.+?)[(:](\d+)(?:[,:](\d+))?\)?:?\s*(error|warning)\s*(\w+)?:?\s*(.*)$/i;
   const counts = new Map();
   const outLines = [];
   let matched = 0;
@@ -168,7 +176,7 @@ function lintCodes(out) {
 }
 
 // cargo / mvn / gradle / dotnet / pip progress lines -> one count per verb; everything else kept.
-const PROGRESS = /^\s*(Compiling|Checking|Fresh|Downloaded|Downloading|Updating|Locking|Adding|Installing|Unpacking|Collecting|Using cached|Building wheel|Created wheel|Stored in directory|> Task\b|\[INFO\] (Download(ing|ed)|Building|Installing|---|Copying|Using|Compiling)|Download(ing|ed) from|Progress \(\d+\))/;
+const PROGRESS = /^\s*(Compiling|Checking|Fresh|Downloaded|Downloading|Updating|Locking|Adding|Installing|Unpacking|Collecting|Using cached|Building wheel|Created wheel|Stored in directory|> Task\b|\[INFO\] (Download(ing|ed)|Building|Installing|---|Copying|Using|Compiling)|Download(ing|ed) from|Download https?:|Progress \(\d+\)|Starting a Gradle Daemon|Welcome to Gradle)/;
 function buildProgress(out) {
   const counts = new Map();
   const kept = [];
@@ -248,6 +256,21 @@ function bigTable(out) {
   return [header, ...bad, ...first, ...(hidden > 0 ? [`… +${hidden} more rows (${rows.length} total, ${bad.length} unhealthy shown first)`] : [])].join('\n');
 }
 
+// terraform / tofu plan|apply|destroy: the plan body is the signal; refresh, read and
+// "Still creating…" progress is not. Rule set after OmniRoute's terraform-plan RTK filter.
+function terraformPlan(out) {
+  const NOISE = /(: (Refreshing state\.\.\.|Reading\.\.\.|Read complete after|Still (reading|creating|modifying|destroying)\.\.\.|Creating\.\.\.|Modifying\.\.\.|Destroying\.\.\.))|^(Acquiring|Releasing) state lock\b/;
+  const lines = out.split('\n');
+  const kept = [];
+  let dropped = 0;
+  for (const l of lines) {
+    if (NOISE.test(l) && !SIGNAL.test(l)) dropped++;
+    else kept.push(l);
+  }
+  if (dropped < 5) return null;
+  return [`[tokenarmy] ${dropped} refresh/read/progress lines hidden`, ...kept].join('\n');
+}
+
 function dockerBuild(out) {
   if (!/^#\d+ |Step \d+\/\d+/m.test(out)) return null;
   return out
@@ -260,9 +283,10 @@ const RULES = [
   { name: 'git-status', cmd: /\bgit\s+status\b(?!.*(--porcelain|-s\b|--short))/, fn: gitStatus },
   { name: 'git-log', cmd: /\bgit\s+log\b(?!.*(--oneline|--format|--pretty))/, fn: gitLog },
   { name: 'install', cmd: /\b(npm|pnpm|yarn|bun)\s+(i|install|add|ci)\b|\bpip3?\s+install\b|\buv\s+(pip|sync|add)\b|\bpoetry\s+(install|add)\b/, fn: packageInstall },
-  { name: 'tests', cmd: /\b(jest|vitest|mocha|pytest|py\.test|cargo\s+test|go\s+test|npm\s+(run\s+)?test|pnpm\s+(run\s+)?test|yarn\s+test|node\s+--test|dotnet\s+test|rspec|phpunit)\b/, fn: testRunner },
+  { name: 'tests', cmd: /\b(jest|vitest|mocha|pytest|py\.test|cargo\s+test|go\s+test|npm\s+(run\s+)?test|pnpm\s+(run\s+)?test|yarn\s+test|node\s+--test|dotnet\s+test|rspec|phpunit|bun\s+test|deno\s+test|cargo\s+nextest|gotestsum|playwright\s+test)\b/, fn: testRunner },
   { name: 'diagnostics', cmd: /\b(tsc|eslint|cargo\s+(build|check|clippy)|gcc|g\+\+|clang|mypy|ruff|flake8|pylint|go\s+vet|dotnet\s+build)\b/, fn: compilerDiagnostics },
   { name: 'build', cmd: /\b(mvn|mvnw|gradle|gradlew|cargo\s+(run|install|fetch|update)|dotnet\s+(restore|publish)|cmake\s+--build|make)\b/, fn: (o) => compilerDiagnostics(o) || buildProgress(o) },
+  { name: 'terraform', cmd: /\b(terraform|tofu|terragrunt)\s+(plan|apply|destroy|refresh)\b/, fn: terraformPlan },
   { name: 'docker', cmd: /\bdocker\s+(build|compose\s+build|buildx)\b/, fn: dockerBuild },
   { name: 'git-diff', cmd: /\bgit\s+(diff|show)\b(?!.*(--stat|--name-only|--name-status|--numstat|--shortstat))/, fn: gitDiff },
   { name: 'git-transfer', cmd: /\bgit\s+(push|pull|fetch|clone)\b/, fn: gitTransfer },
@@ -293,4 +317,4 @@ function applyFilter(command, output) {
   }
 }
 
-module.exports = { applyFilter, detectFilter, RULES, gitStatus, gitLog, packageInstall, testRunner, listing, compilerDiagnostics, dockerBuild, lintCodes, buildProgress, gitDiff, gitTransfer, bigTable };
+module.exports = { applyFilter, detectFilter, RULES, gitStatus, gitLog, packageInstall, testRunner, listing, compilerDiagnostics, dockerBuild, lintCodes, buildProgress, gitDiff, gitTransfer, bigTable, terraformPlan };

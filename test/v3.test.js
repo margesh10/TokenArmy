@@ -108,7 +108,12 @@ test('loop guard: third identical failure gets a note; success resets it', () =>
   assert.strictEqual(hook(fail, home), null);
   const third = hook(fail, home).hookSpecificOutput.updatedToolOutput.stdout;
   assert.ok(third.startsWith('FAIL src/a.test.js'), 'original output intact');
-  assert.match(third, /`npm test` has now failed 3 times in a row with the same error/);
+  assert.match(third, /`npm test` has failed 3 times in a row with the same error/);
+  assert.match(third, /materially different hypothesis/);
+  assert.doesNotMatch(third, /\bstop\b/i, 'the redirect never tells the agent to stop');
+  assert.strictEqual(hook(fail, home), null, '4th repeat: quiet (the note repeats every 3rd time, not every time)');
+  assert.strictEqual(hook(fail, home), null, '5th repeat: quiet');
+  assert.match(hook(fail, home).hookSpecificOutput.updatedToolOutput.stdout, /failed 6 times/);
   const ok = { ...fail, tool_response: { ...fail.tool_response, stdout: 'Tests: 12 passed' } };
   hook(ok, home);
   assert.strictEqual(hook(fail, home), null, 'counter reset after a pass');
