@@ -60,6 +60,7 @@ function main(raw) {
     return;
   }
   if (evt.hook_event_name !== 'SessionStart') return;
+  require('../src/retention').prune();
   const parts = [];
   // Environment facts learned in earlier sessions here (see src/facts.js). Re-sent after
   // compaction too: the summary may not keep them.

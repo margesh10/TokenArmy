@@ -2,9 +2,8 @@
 // Project brief: what earlier sessions in this repository already found out, stated in a few
 // lines at session start, so a new session does not spend turns rediscovering it.
 //
-// After Hindsight's "mental models" (an agent boots with a page of settled knowledge instead of
-// rediscovering it every session) and its "observations" (every belief carries a proof count),
-// but local and LLM-free: every line is computed from what the agent actually ran and read here,
+// An agent boots with a page of settled knowledge instead of rediscovering it every session,
+// and every belief carries a proof count. Local and LLM-free: every line is computed from what the agent actually ran and read here,
 // and every line carries the number of sessions behind it.
 //
 //   Commands that worked   test/build/lint/typecheck commands that ran clean in 2+ sessions

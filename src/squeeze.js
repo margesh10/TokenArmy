@@ -37,8 +37,8 @@ function shape(line) {
     .trim();
 }
 
-// What a run of hidden lines had in common, computed from exactly those lines (after caveman's
-// "class-invariant elision summaries"). A bare count makes the agent wonder whether something it
+// What a run of hidden lines had in common, computed from exactly those lines
+// (a class-invariant elision summary). A bare count makes the agent wonder whether something it
 // needs was hidden, and it re-opens the raw log; a summary answers that without the lines:
 //   levels   INFO×200 DEBUG×14              (log levels, exact counts)
 //   fields   status: 200×210 404×4          (key=value present in EVERY line: constant, ≤4 values

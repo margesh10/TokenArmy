@@ -38,18 +38,22 @@ for (const [id, label, key] of cmdCases) measure(id, label, 'hook / run', fx[key
 
 measure('claudeMd', 'Sloppy CLAUDE.md', 'compress --level 2', fx.claudeMd.text, prompt.compress(fx.claudeMd.text, 2));
 
-const realFile = fs.readFileSync(path.join(ROOT, 'src', 'context.js'), 'utf8');
+// Both inputs below are frozen snapshots in bench/fixtures/, not the live source tree: a benchmark
+// whose input changes with every commit can't be reproduced. Numbers move only when the
+// *algorithms* change.
+const realFile = fs.readFileSync(path.join(__dirname, 'fixtures', 'outline-sample.js'), 'utf8');
 measure('outline', 'Read 230-line source file', 'outline', realFile, ctx.outline(realFile, 'context.js'));
 
-// RAG: src/ + docs/ as corpus (stable: excludes README so editing it doesn't move the numbers)
-// vs a 1,500-token pack for one question.
-const files = [...ctx.walk(path.join(ROOT, 'src'), /\.js$/), ...ctx.walk(path.join(ROOT, 'docs'), /\.md$/), path.join(ROOT, 'hooks', 'claude-posttooluse.js')];
+// RAG: a frozen copy of this repo's src/ + docs/ (bench/fixtures/rag-corpus/) vs a 1,500-token
+// pack for one question.
+const CORPUS = path.join(__dirname, 'fixtures', 'rag-corpus');
+const files = ctx.walk(CORPUS, /\.(js|md)$/).sort();
 let corpus = '';
 const chunks = [];
 for (const f of files) {
   const t = fs.readFileSync(f, 'utf8');
   corpus += t + '\n';
-  chunks.push(...ctx.chunk(t, { source: path.relative(ROOT, f).replace(/\\/g, '/') }));
+  chunks.push(...ctx.chunk(t, { source: path.relative(CORPUS, f).replace(/\\/g, '/') }));
 }
 const packed = ctx.pack(chunks, 'how does the hook keep the raw output recoverable', 1500);
 measure('rag', 'RAG: src+docs vs 1.5k pack', 'pack', corpus, packed.text);
@@ -79,8 +83,17 @@ const without = session(false);
 const withTA = session(true);
 const sessionResult = { turns: TURNS, systemTokens: SYSTEM, without: without[TURNS - 1], with: withTA[TURNS - 1], pct: Math.round(((without[TURNS - 1] - withTA[TURNS - 1]) / without[TURNS - 1]) * 100), seriesWithout: without, seriesWith: withTA };
 
-const results = { generated: new Date().toISOString().slice(0, 10), estimator: 'tokenarmy heuristic (±15% vs BPE)', rows, session: sessionResult };
-fs.writeFileSync(path.join(__dirname, 'results.json'), JSON.stringify(results, null, 2) + '\n');
+// Keep the previous date when nothing changed, so a re-run leaves the file untouched.
+const RESULTS = path.join(__dirname, 'results.json');
+let prev = null;
+try {
+  prev = JSON.parse(fs.readFileSync(RESULTS, 'utf8'));
+} catch {
+  /* first run */
+}
+const same = prev && JSON.stringify({ rows: prev.rows, session: prev.session }) === JSON.stringify({ rows, session: sessionResult });
+const results = { generated: same ? prev.generated : new Date().toISOString().slice(0, 10), estimator: 'tokenarmy heuristic (not yet calibrated against a real tokenizer)', rows, session: sessionResult };
+fs.writeFileSync(RESULTS, JSON.stringify(results, null, 2) + '\n');
 
 console.log('scenario'.padEnd(34), 'before'.padStart(7), 'after'.padStart(7), 'saved'.padStart(6));
 for (const r of rows) console.log(r.label.padEnd(34), String(r.before).padStart(7), String(r.after).padStart(7), (r.pct + '%').padStart(6));

@@ -39,11 +39,16 @@ const MIN_TOKENS = +(env.TOKENARMY_MIN_TOKENS || 300); // don't touch small outp
 const MIN_GAIN = +(env.TOKENARMY_MIN_GAIN || 0.2); // need >= 20% saving to bother
 const MAX_LINES = +(env.TOKENARMY_MAX_LINES || 120);
 const READ_MIN_TOKENS = +(env.TOKENARMY_READ_MIN_TOKENS || 200);
-const READ_TTL_MS = +(env.TOKENARMY_READ_TTL_MIN || 20) * 60 * 1000; // older reads may have left context
+const READ_TTL_MS = +(env.TOKENARMY_READ_TTL_MIN || 10) * 60 * 1000; // older reads may have left context
 
 // The agent already chose what to look at: only lossless cleanup, never cut lines.
 const NARROWED = /\|\s*(head|tail|grep|rg|sed|awk|cut|sort|uniq|wc|jq|Select-Object|Select-String|findstr|Where-Object|Measure-Object)\b|\bsed\s+-n\b|\b(head|tail)\s+-n?\s*\d+/i;
 const SEARCH_CMD = /^\s*(grep|egrep|rg|ag|ack|git\s+grep|Select-String|sls|findstr)\b/i;
+// JSON is only reshaped when it's an API/CLI *response*. Printing a file (cat package.json) means the
+// agent wants the file itself, maybe to edit it: a reshaped table would be read back as the file.
+const API_CMD = /(^|[|;&]\s*|\s)(curl|wget|xh|https?|gh\s+api|gh\s+\S+\s+(list|view|status)\b.*--json|kubectl|oc|helm|aws|az|gcloud|doctl|flyctl|vercel|heroku|stripe|docker\s+(inspect|network\s+inspect|volume\s+inspect)|podman\s+inspect|terraform\s+(show|output)|Invoke-RestMethod|Invoke-WebRequest|irm|iwr)\b|\s(--json|--output[= ]json|-o\s*json|--format[= ]json)\b/i;
+const FILE_READER = /^\s*(cat|type|more|less|bat|head|tail|Get-Content|gc|nl|xxd|od)\b/i;
+const isApiCommand = (cmd) => API_CMD.test(cmd) && !FILE_READER.test(cmd);
 
 function saveRaw(label, body) {
   try {
@@ -62,14 +67,24 @@ const gainOk = (before, after) => before - after >= before * MIN_GAIN;
 // The engine produces a Claude-shaped updatedToolOutput; src/agents.js turns it into each agent's reply.
 let RESULT = null;
 let AGENT = 'claude';
+let PROJECT = '';
 const emit = (updatedToolOutput) => {
   RESULT = updatedToolOutput;
 };
-const record = (e) => stats.record({ ...e, agent: AGENT });
+const record = (e) => stats.record({ ...e, agent: AGENT, proj: PROJECT || undefined });
+// What the agent has kept undoing in this project lately (see src/learn.js).
+const bypassed = () => learn.autoBypassed(stats.readRows(), { project: PROJECT, archive: stats.readArchive() }).bypass;
 
 function lossless(text) {
   return squashBlankLines(collapseCarriageReturns(stripAnsi(text).replace(/\r\n/g, '\n')).split('\n')).join('\n');
 }
+
+// A line that says the command actually FAILED. Deliberately narrower than SIGNAL (which keeps
+// anything that might matter, warnings included): warnings and deprecations come back on every
+// successful run, and calling those a "repeated failure" would send the agent chasing nothing.
+const FAILURE = /\b(error|errors|err!|fail|failed|failure|failing|fatal|panic(ked)?|exception|traceback|segfault|abort(ed)?|cannot|unable to|not found|denied|refused|timed out)\b|^\s*(E\d{3,}|FAIL\b)|✕|✗|✘|❌|exit (code|status):? *[1-9]/i;
+const NOT_FAILURE = /\bwarn(ing|ings)?\b|\bdeprecat|\b(0|no) (failed|failures?|errors?)\b|\b0 failing\b|\bpassed\b|\berror(s)?: 0\b/i;
+const isFailureLine = (l) => FAILURE.test(l) && !NOT_FAILURE.test(l);
 
 // Loop guard: the same command failing with the same error again and again burns tokens.
 // From the 3rd identical failure in a session, say so (the output itself is left intact).
@@ -77,7 +92,7 @@ function loopNote(evt, cmd, text) {
   if (env.TOKENARMY_LOOPGUARD === '0' || !evt.session_id) return '';
   const fam = learn.family(cmd);
   const loops = session.load(evt.session_id, 'loops.json', {});
-  const first = text.split('\n').find((l) => SIGNAL.test(l) && !/\b(0 (failed|errors?)|no errors?|passed)\b/i.test(l));
+  const first = text.split('\n').find(isFailureLine);
   if (!first) {
     if (loops[fam]) {
       delete loops[fam];
@@ -93,7 +108,7 @@ function loopNote(evt, cmd, text) {
   // Speak at the 3rd repeat, then only every 3rd after that: a note on every retry is itself noise.
   if (cur.n < 3 || cur.n % 3 !== 0) return '';
   record({ kind: 'loop', family: fam, session: evt.session_id, cmd: cmd.slice(0, 80), before: 0, after: 0, repeats: cur.n });
-  // Mirror the agent's own actions back and redirect; never tell it to stop (TokenEconomizer's loop-guard rule).
+  // Mirror the agent's own actions back and redirect; never tell it to stop.
   return `\n[tokenarmy] \`${fam}\` has failed ${cur.n} times in a row with the same error ("${first.trim().slice(0, 120)}"). Another run without a different change will fail the same way. Keep going, but test a materially different hypothesis: re-read what the failing check expects, and consider a different file or root cause than the one you have been changing.`;
 }
 
@@ -114,8 +129,7 @@ function shell(evt, res) {
 
   const fam = learn.family(cmd);
   const filters = learn.loadFilters(evt.cwd);
-  const learned = learn.autoBypassed(stats.readRows());
-  const hands_off = NARROWED.test(cmd) || learn.isBypassed(cmd, filters) || learned.bypass.has(fam);
+  const hands_off = NARROWED.test(cmd) || learn.isBypassed(cmd, filters) || bypassed().has(fam);
 
   let newOut;
   let mode;
@@ -124,7 +138,7 @@ function shell(evt, res) {
     mode = 'lossless';
   } else {
     const ruled = learn.applyUserRules(cmd, stdout, filters);
-    const json = env.TOKENARMY_JSON !== '0' ? crushJson(ruled.output) : null;
+    const json = env.TOKENARMY_JSON !== '0' && isApiCommand(cmd) ? crushJson(ruled.output) : null;
     const searched = !json && SEARCH_CMD.test(cmd) && env.TOKENARMY_SEARCH !== '0' ? compressSearch(lossless(ruled.output)) : null;
     newOut = json || searched || squeeze(ruled.output, { command: cmd, maxLines: MAX_LINES });
     mode = json ? 'json' : searched ? 'search' : ruled.applied ? 'rules' : 'squeeze';
@@ -179,10 +193,19 @@ function read(evt, res) {
   const prev = reads[key];
   const h = session.hash(content);
   const now = Date.now();
+  // Did a recent "unchanged" note fail? Re-reading the same file with a different range right after
+  // one means the agent didn't really have it any more. Count it like opening a raw log, so a project
+  // where the notes keep missing stops getting them (autoBypassed on family 'read').
+  const noted = reads[`note:${file.filePath}`];
+  if (noted && noted.key !== key && now - noted.at < 10 * 60 * 1000) {
+    record({ kind: 'expand', family: 'read', session: sid, cmd: `Read ${path.basename(file.filePath)} (full, after a re-read note)`, before: 0, after: 0 });
+    delete reads[`note:${file.filePath}`];
+  }
   reads[key] = { hash: h, at: now };
   session.save(sid, 'reads.json', reads);
   session.save(sid, `read-${h}.json`, content);
   if (!prev || tokens < READ_MIN_TOKENS || now - prev.at > READ_TTL_MS) return;
+  if (bypassed().has('read')) return;
 
   const howFull = agents.fullReadHint(AGENT);
   let replacement;
@@ -201,6 +224,8 @@ function read(evt, res) {
   const after = estimateTokens(replacement);
   if (!gainOk(tokens, after)) return;
   record({ kind, family: 'read', session: sid, cmd: `Read ${path.basename(file.filePath)}`, before: tokens, after });
+  reads[`note:${file.filePath}`] = { key, at: now };
+  session.save(sid, 'reads.json', reads);
   emit({ ...res, file: { ...file, content: replacement, numLines: replacement.split('\n').length } });
 }
 
@@ -226,6 +251,7 @@ function handle(raw, agentHint) {
     return null;
   }
   AGENT = agents.detect(input, agentHint);
+  PROJECT = input.cwd || '';
   // Called from .claude/settings.json by another agent that has its own TokenArmy install: let that one run.
   if (!agentHint && AGENT !== 'claude' && require('../src/install').hasDedicatedInstall(AGENT, input.cwd)) return null;
   const evt = AGENT === 'copilot' ? agents.fromCopilot(input) : AGENT === 'devin' ? agents.fromDevin(input) : input;

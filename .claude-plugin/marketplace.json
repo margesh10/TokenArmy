@@ -7,7 +7,7 @@
       "name": "tokenarmy",
       "source": "./",
       "description": "Shrinks noisy tool output, grep results and file re-reads before Claude sees them; checkpoint survives compaction; learns locally.",
-      "version": "0.2.0",
+      "version": "0.3.0",
       "license": "MIT",
       "category": "productivity"
     }

@@ -2,18 +2,21 @@
 
 # 🪖 TokenArmy
 
-**Save tokens everywhere.** Compress tool output, strip AI slop, pack RAG context to a budget,<br>
-and audit where your AI agent wastes context. Works with Claude Code, GitHub Copilot, Devin and any LLM.
+**Keeps noisy tool output out of your coding agent's context, without hiding a single error.**<br>
+Test runs, installs, builds, logs, searches and re-reads, trimmed before the agent sees them, raw copy always kept.<br>
+For Claude Code, GitHub Copilot and Devin. Plus prompt compression, budgeted RAG and a context audit.
 
+[![test](https://github.com/margesh10/TokenArmy/actions/workflows/test.yml/badge.svg)](https://github.com/margesh10/TokenArmy/actions/workflows/test.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-2a78d6.svg)](LICENSE)
 [![Node ≥ 18](https://img.shields.io/badge/node-%E2%89%A518-2a78d6.svg)](package.json)
 [![Zero dependencies](https://img.shields.io/badge/dependencies-0-2a78d6.svg)](package.json)
-[![Tests](https://img.shields.io/badge/tests-73%20passing-0ca30c.svg)](test/)
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="assets/hero-dark.svg">
-  <img alt="Benchmark headline: −92% command output tokens, −68% per 40-turn agent session, −88% file reads, −96% RAG context" src="assets/hero-light.svg" width="860">
+  <img alt="Benchmark headline: −92% command output tokens, −68% per 40-turn agent session, −88% file reads, −97% RAG context" src="assets/hero-light.svg" width="860">
 </picture>
+
+<sub>Fixture benchmarks: one output before and after, and a modelled 40-turn session (<a href="#-benchmarks">method</a>). Real-session savings depend on your work; <a href="#measure-it-on-your-own-project">measure yours</a>.</sub>
 
 [Quick start](#-quick-start) · [Before / after](#-before--after) · [Benchmarks](#-benchmarks) · [How it works](#-how-it-works) · [Commands](#-commands) · [Why TokenArmy](#-why-tokenarmy) · [Patterns](docs/PATTERNS.md)
 
@@ -37,11 +40,10 @@ Every number here says how it was measured, and `tokenarmy ab` lets you [measure
 /plugin install tokenarmy --marketplace margesh10/TokenArmy
 ```
 
-**Or from source (adds the CLI and the status line).** Pick one: with both the plugin and `init`, every hook runs twice.
+**Or with npm (adds the CLI and the status line, and works for Copilot and Devin).** Pick one: with both the plugin and `init`, every hook runs twice.
 
 ```bash
-git clone https://github.com/margesh10/TokenArmy && cd TokenArmy
-npm link              # puts `tokenarmy` on your PATH (Node ≥ 18, no dependencies)
+npm install -g tokenarmy   # Node ≥ 18, no dependencies
 
 tokenarmy audit       # 1. find where this project leaks tokens
 tokenarmy init --statusline   # 2. Claude Code: install the compression hook + live status line
@@ -213,7 +215,7 @@ These measure a single command's output before and after, on synthetic but reali
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="assets/savings-dark.svg">
-  <img alt="Bar chart of tokens saved per scenario: npm install 99%, pytest 96%, docker build 96%, jest 93%, RAG pack 96%, source file outline 88%, git log 76%, tsc 66%, CLAUDE.md 40%, git status 30%" src="assets/savings-light.svg" width="860">
+  <img alt="Bar chart of tokens saved per scenario: npm install 99%, pytest 96%, docker build 96%, jest 93%, RAG pack 97%, source file outline 88%, git log 76%, tsc 66%, CLAUDE.md 40%, git status 30%" src="assets/savings-light.svg" width="860">
 </picture>
 
 | Scenario | Tool | Before | After | Saved |
@@ -222,7 +224,7 @@ These measure a single command's output before and after, on synthetic but reali
 | `pytest -v`: 301 tests, 1 failing | hook / `run` | 8,091 | 357 | **96%** |
 | `docker build` | hook / `run` | 4,902 | 192 | **96%** |
 | `jest`: 241 tests, 1 failing | hook / `run` | 2,725 | 192 | **93%** |
-| RAG: `src/` + `docs/` vs a 1.5k-token pack | `pack` | 43,674 | 1,541 | **96%** |
+| RAG: a snapshot of `src/` + `docs/` vs a 1.5k-token pack | `pack` | 53,997 | 1,534 | **97%** |
 | Reading a 230-line source file | `outline` | 3,213 | 376 | **88%** |
 | `git log`: 60 commits | hook / `run` | 4,173 | 1,010 | **76%** |
 | `tsc`: 90 type errors (all locations kept) | hook / `run` | 2,920 | 990 | **66%** |
@@ -238,7 +240,7 @@ These measure a single command's output before and after, on synthetic but reali
 
 Without compression, total input grows **quadratically**, because every command's output is resent on every later turn. With TokenArmy the curve stays close to linear. This *model* assumes every other turn runs an uncompressed noisy command, and gives **2.92M → 937k input tokens (−68%)**. Real sessions have far fewer noisy outputs than that; see the A/B above for measured numbers.
 
-> **About these numbers.** The fixtures are synthetic but shaped like real tool output, and generated deterministically, so `npm run bench` reproduces every figure on any machine. Token counts use TokenArmy's built-in estimator (within ±15% of real BPE tokenizers). The session model assumes a 15k-token system prompt plus tool definitions, a command every second turn and no prompt caching. Caching lowers the *price* of a resent prefix, but not the context-window space it takes. Measure your own work with `tokenarmy gain` and Claude Code's `/context`.
+> **About these numbers.** The fixtures are synthetic but shaped like real tool output, and generated deterministically, so `npm run bench` reproduces every figure on any machine. Token counts use TokenArmy's built-in estimator, a fast heuristic that has not yet been checked against a real tokenizer; treat absolute counts as approximate and the before/after ratios as the result. The session model assumes a 15k-token system prompt plus tool definitions, a command every second turn and no prompt caching. Caching lowers the *price* of a resent prefix, but not the context-window space it takes. Measure your own work with `tokenarmy gain` and Claude Code's `/context`.
 
 ## 🧠 How it works
 
@@ -279,8 +281,8 @@ Plus a terse-output skill, [`skills/tokenarmy/SKILL.md`](skills/tokenarmy/SKILL.
 ### 🔁 It learns from your sessions (locally)
 
 - **It notices when it cut too much.** If the agent opens a raw log TokenArmy saved, that compression hid something it needed. Command families the agent keeps expanding are automatically left alone from then on.
-- **It remembers how this repository runs.** When a command fails to resolve (`pytest: command not found`, `The term 'tsc' is not recognized`, `No module named pytest`) and another form of the same tool works later in the session, that pair becomes a candidate. Seen in 2 sessions, it is stated at every session start: "`pytest` fails here (command not found); `python -m pytest` works." At most 4 lines, ~150 tokens. A fact retires by itself when the bare form works in 2 sessions in a row. `tokenarmy facts` lists them; `--clear` forgets them. (After TokenEconomizer's micro-skills.)
-- **It briefs each new session.** A new session usually spends its first turns working out how to run the tests and where the code that matters lives. TokenArmy states what earlier sessions here already found, under ~220 tokens, every line with its evidence (after Hindsight's mental models and proof counts, but local and with no LLM):
+- **It remembers how this repository runs.** When a command fails to resolve (`pytest: command not found`, `The term 'tsc' is not recognized`, `No module named pytest`) and another form of the same tool works later in the session, that pair becomes a candidate. Seen in 2 sessions, it is stated at every session start: "`pytest` fails here (command not found); `python -m pytest` works." At most 4 lines, ~150 tokens. A fact retires by itself when the bare form works in 2 sessions in a row. `tokenarmy facts` lists them; `--clear` forgets them.
+- **It briefs each new session.** A new session usually spends its first turns working out how to run the tests and where the code that matters lives. TokenArmy states what earlier sessions here already found, under ~220 tokens, every line with its evidence (local, no LLM):
 
 ```
 # Project brief from earlier sessions in this repository (TokenArmy; numbers = sessions)
@@ -329,7 +331,7 @@ Filter rules can never drop an error or failure line. Everything stays on your m
 - **Errors are never dropped.** Lines with error, fail, panic, traceback, assert and similar words always survive. If a filter would lose one, it falls back to the generic compressor.
 - **Code is never changed.** Slop removal and prompt compression mask fenced code, inline code, URLs and quoted strings first.
 - **Respects the agent's choices.** If a command already narrows its output (`| tail`, `| grep`, `sed -n`, `Select-Object -First`…), only lossless cleanup is applied: colour codes and carriage-return spam go, no lines are cut.
-- **Re-reads are conservative.** A re-read is only shortened when the same agent read the same range of the same file within the last 20 minutes and no compaction has happened since. Reading with an explicit `limit` always returns the full file.
+- **Re-reads are conservative.** A re-read is only shortened when the same agent read the same range of the same file within the last 10 minutes and no compaction has happened since. Reading with an explicit `limit` always returns the full file. If the agent re-reads a file in full right after a note, the note is counted as a miss, and a project that keeps missing stops getting notes.
 - **No secrets on disk.** Raw outputs and checkpoints are scanned before they are written: API keys, tokens, private keys, JWTs, passwords in URLs and `*_SECRET=`/`*_PASSWORD=` values become `[REDACTED:<kind>]`. What the agent sees is not changed.
 - **Easy to skip.** Add `# raw` to a command, set `TOKENARMY_OFF=1`, or turn off one layer: `TOKENARMY_READ_DEDUPE=0`, `TOKENARMY_SEARCH=0`, `TOKENARMY_JSON=0`, `TOKENARMY_LOOPGUARD=0`, `TOKENARMY_CHECKPOINT=0`, `TOKENARMY_FACTS=0`, `TOKENARMY_BRIEF=0`, `TOKENARMY_REDACT=0`.
 - **Local only.** No network calls and no telemetry. The savings ledger is a local JSONL file.
@@ -356,15 +358,16 @@ Filter rules can never drop an error or failure line. Everything stays on your m
 - [x] GitHub Copilot (VS Code agent mode, Copilot CLI) and Devin (CLI, Desktop) hooks
 - [ ] Live check on the Copilot cloud coding agent (needs TokenArmy installed in its sandbox)
 - [x] `tokenarmy ab`: reproducible real-task benchmark
-- [ ] Publish to npm (`npm i -g tokenarmy`)
+- [x] Published to npm (`npm install -g tokenarmy`)
 - [ ] A/B results on more public projects (noisy builds, large monorepos, long sessions)
 - [x] Filters for `cargo test`, `go test`, `gradle` and `terraform plan`
 - [x] Environment facts learned across sessions
 - [x] Elision markers that describe what they hide
 - [ ] `mvn test` (surefire) filter
 - [x] Project brief at session start: test/build commands that work, open failures, hot files (local, no LLM)
-- [ ] Decisions from git history in the brief (commit messages that settle a rule, like Hindsight's coding-agent memory)
-- [ ] Optional exact token counts via a real tokenizer when one is installed
+- [ ] Decisions from git history in the brief (commit messages that settle a rule)
+- [ ] Calibrate the token estimator against a real tokenizer (needs an API key; `tokenarmy calibrate`)
+- [ ] Live-verify the Copilot and Devin hooks in a real session (VS Code, Copilot CLI, Devin CLI)
 - [ ] Codex and Gemini CLI native hooks
 
 ## 📚 Learn more

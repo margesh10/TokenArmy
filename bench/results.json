@@ -1,6 +1,6 @@
 {
-  "generated": "2026-11-03",
-  "estimator": "tokenarmy heuristic (±15% vs BPE)",
+  "generated": "2026-11-21",
+  "estimator": "tokenarmy heuristic (not yet calibrated against a real tokenizer)",
   "rows": [
     {
       "id": "jest",
@@ -105,12 +105,12 @@
       "id": "rag",
       "label": "RAG: src+docs vs 1.5k pack",
       "tool": "pack",
-      "before": 43674,
-      "after": 1541,
-      "saved": 42133,
-      "pct": 96,
-      "linesBefore": 2660,
-      "linesAfter": 92
+      "before": 53997,
+      "after": 1534,
+      "saved": 52463,
+      "pct": 97,
+      "linesBefore": 3282,
+      "linesAfter": 93
     }
   ],
   "session": {

@@ -83,14 +83,32 @@ function isBypassed(command, filters) {
   });
 }
 
-// Families whose compressed output the agent keeps opening in full.
-function autoBypassed(rows) {
+// Families whose compressed output the agent keeps opening in full, in THIS project, recently.
+// Scoped per project (opening npm test's raw log in one repo says nothing about another) and
+// limited to the last BYPASS_DAYS, so a bypass expires once the agent stops needing it.
+// opts.project: the session's cwd (rows without a project are legacy and count everywhere);
+// opts.archive: the stats archive, whose per-family totals survive ledger rotation.
+const BYPASS_DAYS = +(process.env.TOKENARMY_BYPASS_DAYS || 14);
+const projKey = (p) => String(p || '').replace(/\\/g, '/').replace(/\/+$/, '').toLowerCase();
+
+function autoBypassed(rows, opts = {}) {
+  const now = opts.now || Date.now();
+  const since = now - BYPASS_DAYS * 864e5;
+  const proj = opts.project != null ? projKey(opts.project) : null;
+  const mine = (p) => proj == null || !p || projKey(p) === proj;
   const fam = {};
+  const add = (name) => (fam[name] = fam[name] || { compressed: 0, expanded: 0 });
   for (const r of rows || []) {
-    if (!r.family) continue;
-    const f = (fam[r.family] = fam[r.family] || { compressed: 0, expanded: 0 });
-    if (r.kind === 'expand') f.expanded++;
-    else if (r.kind && r.kind.startsWith('hook:')) f.compressed++;
+    if (!r.family || !mine(r.proj) || !(Date.parse(r.at) >= since || !r.at)) continue;
+    if (r.kind === 'expand') add(r.family).expanded++;
+    else if (r.kind && (r.kind.startsWith('hook:') || r.kind.startsWith('run:'))) add(r.family).compressed++;
+  }
+  for (const [key, v] of Object.entries((opts.archive && opts.archive.families) || {})) {
+    const [p, name] = key.split('\u0000');
+    if (!mine(p) || !(v.last >= since)) continue;
+    const f = add(name);
+    f.compressed += v.compressed || 0;
+    f.expanded += v.expanded || 0;
   }
   const out = new Set();
   for (const [k, v] of Object.entries(fam)) if (v.expanded >= 2 && v.expanded >= v.compressed * 0.5) out.add(k);

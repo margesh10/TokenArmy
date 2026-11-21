@@ -1,7 +1,7 @@
 'use strict';
 // Dependency-free token estimator.
 // Real BPE tokenizers differ per model, so this is an estimate tuned to be
-// within ~10-15% of cl100k/Claude counts on English prose and source code.
+// close to cl100k/Claude counts on English prose and source code (a design target; not yet measured against a real tokenizer).
 // Rules of thumb it encodes:
 //   - English words: ~1.3 tokens per word (common words are 1 token, long/rare words split)
 //   - Punctuation / symbols: usually 1 token each

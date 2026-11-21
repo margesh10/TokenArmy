@@ -106,7 +106,8 @@ test('Devin wrap mode: only known-noisy, stateless commands are wrapped', () => 
   const cmd = out.hookSpecificOutput.updatedInput.command;
   assert.strictEqual(out.hookSpecificOutput.hookEventName, 'PreToolUse');
   assert.match(cmd, /tokenarmy\.js" run --agent devin --session dv-1 --b64 /);
-  assert.strictEqual(Buffer.from(cmd.split('--b64 ')[1], 'base64').toString(), 'npm test -- --runInBand', 'exact command preserved');
+  assert.strictEqual(Buffer.from(cmd.split('--b64 ')[1].split(' ')[0], 'base64').toString(), 'npm test -- --runInBand', 'exact command preserved');
+  assert.match(cmd, / # tokenarmy: npm test -- --runInBand$/, 'original command stays readable');
   for (const c of ['cd app && npm test', 'export CI=1; npm test', 'source .venv/bin/activate && pytest', 'npm test | tail -20', 'npm run dev &', 'vim README.md', 'echo hello', 'git log --oneline # raw', 'cat <<EOF > x\nhi\nEOF']) {
     assert.strictEqual(wrappable(c), false, c);
   }

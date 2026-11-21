@@ -1,7 +1,8 @@
 ### hooks/claude-posttooluse.js:1-23
 #!/usr/bin/env node
 'use strict';
-// Claude Code PostToolUse hook. Shrinks tool results before Claude sees them:
+// PostToolUse hook for Claude Code, GitHub Copilot and Devin (src/agents.js adapts each agent's
+// payload and reply; `--agent <name>` pins the agent, else it's detected). Shrinks tool results:
 //   Bash / PowerShell  noisy command output -> errors, failures, summaries (built-in + learned filters)
 //   Grep               long match lists -> grouped by file with counts
 //   Read               re-reading an unchanged file -> a short note; a changed file -> just the diff
@@ -21,7 +22,13 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const { squeeze, stripAnsi, collapseCarriageReturns, squashBlankLines } = require('../src/squeeze');
-const { estimateTokens } = require('../src/tokens');
+
+### docs/PATTERNS.md:1-6
+# Token engineering patterns
+
+Ways to spend fewer tokens on context, retrieval, prompts and agent loops. Each pattern says what it costs, why it works and how to apply it.
+
+---
 
 ### docs/PATTERNS.md:7-20
 ## 1. The cost model you are actually paying
@@ -38,6 +45,11 @@ Two consequences:
 
 Output tokens cost 3-5× more each but are usually only 1-5% of a session's volume. Terse-output skills help cost a little; input discipline helps a lot.
 
+### src/agents.js:61-63
+}
+
+// Devin payload -> engine event (used for observing; Devin can't take replaced output).
+
 ### src/audit.js:127-136
 // 5. Hooks: is output compression wired?
   const allHooks = JSON.stringify([settings.hooks, (readJson(path.join(home, '.claude', 'settings.json')) || {}).hooks]);
@@ -48,22 +60,23 @@ Output tokens cost 3-5× more each but are usually only 1-5% of a session's volu
   return { root, memoryTokens, mcpServers: [...servers], findings, perTurnSavings: findings.reduce((a, f) => a + (f.tokens || 0), 0) };
 }
 
-### src/filters.js:55-68
-function packageInstall(out) {
-  // npm/pnpm/yarn/pip install: keep summary, warnings, errors.
-  const lines = out.split('\n');
-  const keep = lines.filter(
-    (l) =>
-      SIGNAL.test(l) ||
-      /^(added|removed|changed|up to date|audited|found \d+|\d+ packages?|Successfully installed|Requirement already satisfied: \S+$|Done in|Packages: |Progress: resolved .* done)/i.test(l.trim()) ||
-      /vulnerabilit/i.test(l)
-  );
-  const dedup = [...new Set(keep.map((l) => l.trim()))];
-  if (!dedup.length) return `install finished (${lines.length} lines of output, no warnings/errors)`;
-  return dedup.join('\n');
+### src/install.js:85-98
+function installDevin({ global = false, cwd = process.cwd(), wrap = false } = {}) {
+  const file = devinFile({ global, cwd });
+  const cur = readJson(file);
+  const ours = devinHooks({ wrap });
+  if (global) writeJson(file, { ...(cur || {}), hooks: mergeHooks(cur && cur.hooks, ours) });
+  else writeJson(file, mergeHooks(cur, ours));
+  const notes = [];
+  if (wrap && process.platform === 'win32') notes.push('Wrap mode is skipped on Windows (Devin does not document which shell it uses there); it is active on macOS, Linux and WSL.');
+  if (!wrap) notes.push('Devin hooks cannot replace a tool\'s output, so without --wrap TokenArmy adds the project brief, learned facts and the loop guard, but does not shrink command output. Add --wrap to run known-noisy commands through `tokenarmy run`.');
+  return { file, notes };
 }
 
-### src/learn.js:100-113
+// Is there a dedicated TokenArmy install for this agent? The Claude-format entry (.claude/settings.json,
+// which Copilot and Devin also read) stands aside when there is, so nothing runs twice.
+
+### src/learn.js:118-131
 function rawLogCommand(file) {
   try {
     const fd = fs.openSync(file, 'r');
@@ -78,15 +91,3 @@ function rawLogCommand(file) {
 }
 
 // Does this tool call open one of our raw logs? Returns the original command if so.
-
-### src/learn.js:194-195
-module.exports = { family, loadFilters, applyUserRules, isBypassed, autoBypassed, expandTarget, mine, writeRules, RAW_DIR, USER_FILTERS };
-
-### src/search.js:1-8
-'use strict';
-// Search-output compression: group hits by file, keep the first few per file, count the rest,
-// truncate very long lines (minified files, lockfiles). Works on Claude Code Grep "content" mode
-// (path:line:text or path:line-text) and grep/rg/Select-String output.
-const { SIGNAL } = require('./squeeze-signal');
-
-const LINE = /^(.+?)([:-])(\d+)[:-](.*)$/; // file:12:text  |  file-12-text (context lines)

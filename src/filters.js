@@ -257,7 +257,7 @@ function bigTable(out) {
 }
 
 // terraform / tofu plan|apply|destroy: the plan body is the signal; refresh, read and
-// "Still creating…" progress is not. Rule set after OmniRoute's terraform-plan RTK filter.
+// "Still creating…" progress is not.
 function terraformPlan(out) {
   const NOISE = /(: (Refreshing state\.\.\.|Reading\.\.\.|Read complete after|Still (reading|creating|modifying|destroying)\.\.\.|Creating\.\.\.|Modifying\.\.\.|Destroying\.\.\.))|^(Acquiring|Releasing) state lock\b/;
   const lines = out.split('\n');

@@ -4,8 +4,7 @@
 //
 // Sessions keep rediscovering the same thing by failing at it: `pytest` is not on PATH but
 // `python -m pytest` works, `tsc` is missing but `npx tsc` runs. Each rediscovery costs a
-// failed call, its error output, and a turn. The idea comes from TokenEconomizer's
-// "micro-skills" (FormRepair): a failing form followed in the same session by a working form
+// failed call, its error output, and a turn. A failing form followed in the same session by a working form
 // of the same tool becomes a candidate fact.
 //
 //   candidate  seen once: form A failed to resolve, then form B of the same tool ran

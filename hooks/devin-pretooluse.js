@@ -44,7 +44,10 @@ function handle(raw, platform = process.platform) {
   if (!wrappable(cmd)) return null;
   const b64 = Buffer.from(cmd, 'utf8').toString('base64');
   const sid = evt.session_id ? ` --session ${String(evt.session_id).replace(/[^\w-]/g, '')}` : '';
-  return { hookSpecificOutput: { hookEventName: 'PreToolUse', updatedInput: { command: `node "${CLI}" run --agent devin${sid} --b64 ${b64}` } } };
+  // The trailing comment keeps the real command readable in Devin's logs and approval prompts
+  // (base64 alone would hide it); the shell ignores it.
+  const shown = cmd.replace(/\s*\n\s*/g, ' ⏎ ').slice(0, 200);
+  return { hookSpecificOutput: { hookEventName: 'PreToolUse', updatedInput: { command: `node "${CLI}" run --agent devin${sid} --b64 ${b64} # tokenarmy: ${shown}` } } };
 }
 
 module.exports = { handle, wrappable };

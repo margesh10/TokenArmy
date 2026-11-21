@@ -83,7 +83,7 @@ function audit(root = process.cwd()) {
   if (servers.size >= 4) add('high', 'mcp', `${servers.size} MCP servers configured`, `Servers: ${[...servers].join(', ')}. Large servers (GitHub, Playwright) can add 10k-40k tokens of tool schemas each when not lazily loaded.`, 'Disable servers per-project you do not use there; prefer CLIs (gh, psql) the agent already knows; keep tool search / deferred loading on.', servers.size * 3000);
   else if (servers.size) add('info', 'mcp', `${servers.size} MCP server(s): ${[...servers].join(', ')}`, 'Fine if each is used in this project.', 'Run /context in Claude Code to see the real per-server cost.', 0);
 
-  // 2b. MCP servers this project never uses (TokenEconomizer's tool pruning, as advice only):
+  // 2b. MCP servers this project never uses (advice only):
   //     count mcp__<server>__ tool calls in this project's recent Claude Code transcripts.
   const usage = mcpUsage(root, home);
   if (usage && usage.sessions >= MIN_USAGE_SESSIONS) {
