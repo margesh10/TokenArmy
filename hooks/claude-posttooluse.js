@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 'use strict';
-// Claude Code PostToolUse hook. Shrinks tool results before Claude sees them:
+// PostToolUse hook for Claude Code, GitHub Copilot and Devin (src/agents.js adapts each agent's
+// payload and reply; `--agent <name>` pins the agent, else it's detected). Shrinks tool results:
 //   Bash / PowerShell  noisy command output -> errors, failures, summaries (built-in + learned filters)
 //   Grep               long match lists -> grouped by file with counts
 //   Read               re-reading an unchanged file -> a short note; a changed file -> just the diff
@@ -31,6 +32,7 @@ const learn = require('../src/learn');
 const facts = require('../src/facts');
 const { redact } = require('../src/redact');
 const brief = require('../src/brief');
+const agents = require('../src/agents');
 
 const env = process.env;
 const MIN_TOKENS = +(env.TOKENARMY_MIN_TOKENS || 300); // don't touch small outputs
@@ -57,7 +59,13 @@ function saveRaw(label, body) {
 
 const note = (before, after, rawPath) => `\n[tokenarmy: ~${before}→~${after} tokens${rawPath ? `; full output: ${rawPath}` : ''}]`;
 const gainOk = (before, after) => before - after >= before * MIN_GAIN;
-const emit = (updatedToolOutput) => process.stdout.write(JSON.stringify({ hookSpecificOutput: { hookEventName: 'PostToolUse', updatedToolOutput } }));
+// The engine produces a Claude-shaped updatedToolOutput; src/agents.js turns it into each agent's reply.
+let RESULT = null;
+let AGENT = 'claude';
+const emit = (updatedToolOutput) => {
+  RESULT = updatedToolOutput;
+};
+const record = (e) => stats.record({ ...e, agent: AGENT });
 
 function lossless(text) {
   return squashBlankLines(collapseCarriageReturns(stripAnsi(text).replace(/\r\n/g, '\n')).split('\n')).join('\n');
@@ -84,7 +92,7 @@ function loopNote(evt, cmd, text) {
   session.save(evt.session_id, 'loops.json', loops);
   // Speak at the 3rd repeat, then only every 3rd after that: a note on every retry is itself noise.
   if (cur.n < 3 || cur.n % 3 !== 0) return '';
-  stats.record({ kind: 'loop', family: fam, session: evt.session_id, cmd: cmd.slice(0, 80), before: 0, after: 0, repeats: cur.n });
+  record({ kind: 'loop', family: fam, session: evt.session_id, cmd: cmd.slice(0, 80), before: 0, after: 0, repeats: cur.n });
   // Mirror the agent's own actions back and redirect; never tell it to stop (TokenEconomizer's loop-guard rule).
   return `\n[tokenarmy] \`${fam}\` has failed ${cur.n} times in a row with the same error ("${first.trim().slice(0, 120)}"). Another run without a different change will fail the same way. Keep going, but test a materially different hypothesis: re-read what the failing check expects, and consider a different file or root cause than the one you have been changing.`;
 }
@@ -129,7 +137,7 @@ function shell(evt, res) {
   }
 
   const rawPath = saveRaw(cmd, `${stdout}\n--- stderr ---\n${stderr}`);
-  stats.record({
+  record({
     kind: evt.tool_name === 'PowerShell' ? 'hook:powershell' : 'hook:bash',
     mode,
     family: fam,
@@ -151,7 +159,7 @@ function grep(evt, res) {
   if (!gainOk(before, after)) return;
   const label = `Grep ${(evt.tool_input && evt.tool_input.pattern) || ''}`;
   const rawPath = saveRaw(label, res.content);
-  stats.record({ kind: 'hook:grep', mode: 'search', family: 'grep-tool', session: evt.session_id || undefined, cmd: label.slice(0, 80), before, after });
+  record({ kind: 'hook:grep', mode: 'search', family: 'grep-tool', session: evt.session_id || undefined, cmd: label.slice(0, 80), before, after });
   emit({ ...res, content: out + note(before, after, rawPath) });
 }
 
@@ -176,7 +184,7 @@ function read(evt, res) {
   session.save(sid, `read-${h}.json`, content);
   if (!prev || tokens < READ_MIN_TOKENS || now - prev.at > READ_TTL_MS) return;
 
-  const howFull = 'If you no longer have it in context, Read again with an explicit `limit` (e.g. limit: 100000) to get the full file.';
+  const howFull = agents.fullReadHint(AGENT);
   let replacement;
   let kind;
   if (prev.hash === h) {
@@ -192,40 +200,67 @@ function read(evt, res) {
   }
   const after = estimateTokens(replacement);
   if (!gainOk(tokens, after)) return;
-  stats.record({ kind, family: 'read', session: sid, cmd: `Read ${path.basename(file.filePath)}`, before: tokens, after });
+  record({ kind, family: 'read', session: sid, cmd: `Read ${path.basename(file.filePath)}`, before: tokens, after });
   emit({ ...res, file: { ...file, content: replacement, numLines: replacement.split('\n').length } });
 }
 
-function main(raw) {
-  if (env.TOKENARMY_OFF === '1') return;
-  let evt;
+// Devin can't take a replaced output, so only observe (facts, brief, raw-log opens) and pass
+// the loop-guard note along as extra context.
+function devin(evt) {
+  const cmd = evt.tool_input.command || '';
+  const text = `${evt.tool_response.stdout}\n${evt.tool_response.stderr}`;
+  if (evt.tool_name !== 'Bash') return '';
+  facts.observe(evt, cmd, text);
+  brief.observeCommand(evt, cmd, text);
+  return loopNote(evt, cmd, text).trim();
+}
+
+// Returns the JSON to print (or null). Exported for tests and other entry points.
+function handle(raw, agentHint) {
+  RESULT = null;
+  if (env.TOKENARMY_OFF === '1') return null;
+  let input;
   try {
-    evt = JSON.parse(raw);
+    input = JSON.parse(raw);
   } catch {
-    return;
+    return null;
   }
+  AGENT = agents.detect(input, agentHint);
+  // Called from .claude/settings.json by another agent that has its own TokenArmy install: let that one run.
+  if (!agentHint && AGENT !== 'claude' && require('../src/install').hasDedicatedInstall(AGENT, input.cwd)) return null;
+  const evt = AGENT === 'copilot' ? agents.fromCopilot(input) : AGENT === 'devin' ? agents.fromDevin(input) : input;
+  if (!evt) return null;
   const res = evt.tool_response;
-  if (!res || typeof res !== 'object') return;
+  if (!res || typeof res !== 'object') return null;
 
   // Opening one of our raw logs = the compression hid something. Record it, never compress it.
   const expanded = learn.expandTarget(evt.tool_name, evt.tool_input);
   if (expanded) {
-    stats.record({ kind: 'expand', family: learn.family(expanded), session: evt.session_id || undefined, cmd: expanded.slice(0, 80), before: 0, after: 0 });
-    return;
+    record({ kind: 'expand', family: learn.family(expanded), session: evt.session_id || undefined, cmd: expanded.slice(0, 80), before: 0, after: 0 });
+    return null;
   }
 
-  if (evt.tool_name === 'Bash' || evt.tool_name === 'PowerShell') return shell(evt, res);
-  if (evt.tool_name === 'Grep') return grep(evt, res);
-  if (evt.tool_name === 'Read') return read(evt, res);
+  if (AGENT === 'devin') return agents.reply('devin', evt, null, devin(evt));
+  if (evt.tool_name === 'Bash' || evt.tool_name === 'PowerShell') shell(evt, res);
+  else if (evt.tool_name === 'Grep') grep(evt, res);
+  else if (evt.tool_name === 'Read') read(evt, res);
+  return agents.reply(AGENT, evt, RESULT);
 }
 
-let buf = '';
-process.stdin.setEncoding('utf8');
-process.stdin.on('data', (d) => (buf += d));
-process.stdin.on('end', () => {
-  try {
-    main(buf);
-  } catch {
-    /* a hook must never break the agent */
-  }
-});
+module.exports = { handle };
+
+if (require.main === module) {
+  let buf = '';
+  process.stdin.setEncoding('utf8');
+  process.stdin.on('data', (d) => (buf += d));
+  process.stdin.on('end', () => {
+    try {
+      // Optional first argument names the agent (`--agent copilot`), else it's detected from the payload.
+      const i = process.argv.indexOf('--agent');
+      const out = handle(buf, i > 0 ? process.argv[i + 1] : undefined);
+      if (out) process.stdout.write(JSON.stringify(out));
+    } catch {
+      /* a hook must never break the agent */
+    }
+  });
+}

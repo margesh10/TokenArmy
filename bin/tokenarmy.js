@@ -29,9 +29,11 @@ Usage: tokenarmy <command> [args]
   graph <dir> --seed <file> [--hops 2]
                                      Files related to <file> via imports (graph-RAG)
   audit [dir] [--json]               Find where this project/agent setup wastes tokens
-  init [--global] [--skill] [--statusline]
-                                     Install the Claude Code hooks (+ terse skill,
-                                     + status line showing context, $ and tokens saved)
+  init [--agent claude|copilot|devin|all] [--global] [--skill] [--statusline] [--wrap]
+                                     Install the hooks for Claude Code (default), GitHub Copilot
+                                     (VS Code agent mode + Copilot CLI) or Devin (CLI/Desktop);
+                                     Claude extras: terse skill, status line. Devin: --wrap runs
+                                     known-noisy commands through 'tokenarmy run'
   gain                               Local savings ledger
   expand [id|path]                   Print a saved raw output (latest if no id)
   learn [--write]                    What it learned: auto-bypassed commands, proposed noise filters
@@ -85,14 +87,36 @@ const commands = {
   },
 
   run({ flags }) {
-    const cmd = flags['--'];
-    if (!cmd || !cmd.length) throw new Error('usage: tokenarmy run -- <command...>');
-    const line = cmd.join(' ');
+    // --b64 carries the command byte-for-byte (quotes, pipes, redirects intact); used by agent wrappers.
+    const line = typeof flags.b64 === 'string' ? Buffer.from(flags.b64, 'base64').toString('utf8') : (flags['--'] || []).join(' ');
+    if (!line.trim()) throw new Error('usage: tokenarmy run -- <command...>   (or --b64 <base64 command>)');
     const r = spawnSync(line, { shell: true, encoding: 'utf8', maxBuffer: 256 * 1024 * 1024 });
     const raw = (r.stdout || '') + (r.stderr ? '\n' + r.stderr : '');
-    const out = squeeze(raw, { command: line });
-    process.stdout.write(out + '\n');
-    report('run', raw, out);
+    const agent = typeof flags.agent === 'string' ? flags.agent : null;
+    const before = estimateTokens(raw);
+    let out = before < 300 ? raw.replace(/\n$/, '') : squeeze(raw, { command: line });
+    if (agent) {
+      // Inside an agent: same contract as the hooks — raw copy on disk, its path in the output, ledger entry.
+      const after = estimateTokens(out);
+      if (out !== raw.replace(/\n$/, '')) {
+        const learn = require('../src/learn');
+        const { redact } = require('../src/redact');
+        let rawPath = '';
+        try {
+          fs.mkdirSync(learn.RAW_DIR, { recursive: true });
+          rawPath = path.join(learn.RAW_DIR, `${Date.now()}-${require('crypto').randomBytes(3).toString('hex')}.log`);
+          fs.writeFileSync(rawPath, redact(`$ ${line}\n--- stdout ---\n${r.stdout || ''}\n--- stderr ---\n${r.stderr || ''}`));
+        } catch {
+          rawPath = '';
+        }
+        out += `\n[tokenarmy: ~${before}→~${after} tokens${rawPath ? `; full output: ${rawPath}` : ''}]`;
+        stats.record({ kind: `run:${agent}`, agent, session: typeof flags.session === 'string' ? flags.session : undefined, family: learn.family(line), cmd: line.slice(0, 80), before, after });
+      }
+      process.stdout.write(out + '\n');
+    } else {
+      process.stdout.write(out + '\n');
+      report('run', raw, out);
+    }
     process.exitCode = r.status == null ? 1 : r.status;
   },
 
@@ -171,6 +195,19 @@ const commands = {
   },
 
   init({ flags }) {
+    const agentsWanted = String(flags.agent || 'claude').toLowerCase().split(',');
+    const all = agentsWanted.includes('all');
+    const inst = require('../src/install');
+    for (const a of all ? ['copilot', 'devin'] : agentsWanted.filter((x) => x !== 'claude')) {
+      if (a !== 'copilot' && a !== 'devin') throw new Error(`unknown agent "${a}" (use claude, copilot, devin or all)`);
+      const r = a === 'copilot' ? inst.installCopilot({ global: !!flags.global }) : inst.installDevin({ global: !!flags.global, wrap: !!flags.wrap });
+      console.log(`Installed TokenArmy hooks for ${a === 'copilot' ? 'GitHub Copilot' : 'Devin'} in ${r.file}`);
+      for (const n of r.notes) console.log(`  note: ${n}`);
+    }
+    if (!all && !agentsWanted.includes('claude')) {
+      console.log('Restart the agent (or start a new session) to load the hooks. Disable anytime with TOKENARMY_OFF=1.');
+      return;
+    }
     const base = flags.global ? path.join(os.homedir(), '.claude') : path.join(process.cwd(), '.claude');
     const file = path.join(base, 'settings.json');
     fs.mkdirSync(base, { recursive: true });

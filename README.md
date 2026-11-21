@@ -3,12 +3,12 @@
 # 🪖 TokenArmy
 
 **Save tokens everywhere.** Compress tool output, strip AI slop, pack RAG context to a budget,<br>
-and audit where your AI agent wastes context. Works with Claude Code, Codex, Cursor and any LLM.
+and audit where your AI agent wastes context. Works with Claude Code, GitHub Copilot, Devin and any LLM.
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-2a78d6.svg)](LICENSE)
 [![Node ≥ 18](https://img.shields.io/badge/node-%E2%89%A518-2a78d6.svg)](package.json)
 [![Zero dependencies](https://img.shields.io/badge/dependencies-0-2a78d6.svg)](package.json)
-[![Tests](https://img.shields.io/badge/tests-59%20passing-0ca30c.svg)](test/)
+[![Tests](https://img.shields.io/badge/tests-73%20passing-0ca30c.svg)](test/)
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="assets/hero-dark.svg">
@@ -49,6 +49,34 @@ tokenarmy init --statusline   # 2. Claude Code: install the compression hook + l
 tokenarmy gain        # 3. see what you saved
 ```
 
+### 🤝 GitHub Copilot and Devin
+
+```bash
+tokenarmy init --agent copilot        # VS Code agent mode + Copilot CLI  → .github/hooks/tokenarmy.json
+tokenarmy init --agent devin          # Devin CLI / Devin Desktop          → .devin/hooks.v1.json
+tokenarmy init --agent devin --wrap   # …and shrink noisy command output (macOS, Linux, WSL)
+tokenarmy init --agent all            # Claude Code + Copilot + Devin
+```
+
+Add `--global` to install for every project (`~/.copilot/hooks/` or Devin's user config) instead of this repository. The repository files hold absolute paths to TokenArmy on your machine, so keep them out of git.
+
+| | Claude Code | GitHub Copilot | Devin |
+|---|:---:|:---:|:---:|
+| Command output (tests, installs, builds, git, docker, JSON) | ✅ | ✅ | ✅ with `--wrap` |
+| Search results grouped by file | ✅ | ✅ | ✅ `grep`/`rg` with `--wrap` |
+| File re-reads → note or diff | ✅ | ✅ | — |
+| Loop guard on repeated failures | ✅ | ✅ | ✅ |
+| Project brief and learned facts at session start | ✅ | ✅ | ✅ |
+| Checkpoint handed back after compaction | ✅ | — | — |
+| Live status line | ✅ | — | — |
+| Raw output kept, `tokenarmy expand`, `gain`, `learn` | ✅ | ✅ | ✅ |
+
+One engine serves all three: the hook recognises which agent called it and answers in that agent's format. Where a cell is empty, the agent's hook system has no way to do it today:
+
+- **Copilot** replaces a tool result through `modifiedResult`, so it gets the full set. Its compaction event can't add context, so the checkpoint is Claude Code only.
+- **Devin** hooks can't change a tool's output after it runs. With `--wrap`, known-noisy shell commands (tests, installs, builds, `git log/diff/push`, `docker`, searches) run through `tokenarmy run`: the same command, the same exit code, compressed output, raw copy on disk. Commands that change shell state (`cd`, `export`, `source`…), commands you already narrowed (`| tail`) and anything interactive are never wrapped. Without `--wrap`, Devin gets the brief, facts and loop guard only.
+- Both agents also read `.claude/settings.json`. If you install for Claude Code and for Copilot or Devin in the same project, each tool call is still handled exactly once.
+
 ### 📟 Live status line
 
 `--statusline` adds a line under Claude Code's prompt box that updates after every message:
@@ -66,7 +94,7 @@ Opus 5.5 · ctx 43.0k/1.00M (4%) · 182.0k in / 9.4k out · $0.87 · TokenArmy s
 
 The saved `$` is a lower bound (`≥`): a token kept out of context also isn't re-read on every later turn. Prices are Anthropic's list input rates (Opus 5.5 $4/M, Sonnet 5.5 $2/M, Haiku 5.5 $0.10/M, Fable 5.1 $10/M); set `TOKENARMY_PRICE_PER_MTOK` to use your own. Savings only grow when a Bash/PowerShell command prints a large output (≥ ~300 tokens that can be cut by ≥ 20%), so a fresh session shows `saved 0`. `tokenarmy gain` shows the all-time total. An existing custom `statusLine` in your settings is never replaced.
 
-Using Codex, Cursor, Aider or Gemini CLI? Wrap noisy commands with `tokenarmy run -- <cmd>` and copy [`templates/AGENTS.md`](templates/AGENTS.md) into your project.
+Using another agent (Codex, Cursor, Aider, Gemini CLI)? Wrap noisy commands with `tokenarmy run -- <cmd>` and copy [`templates/AGENTS.md`](templates/AGENTS.md) into your project.
 
 ## 🔍 Before / after
 
@@ -278,6 +306,7 @@ Filter rules can never drop an error or failure line. Everything stays on your m
 |---|---|
 | `tokenarmy audit [dir]` | Lists token leaks in a project or agent setup, with fixes and estimated savings |
 | `tokenarmy init [--global] [--skill] [--statusline]` | Installs the Claude Code hook (plus the terse-mode skill and the [live status line](#-live-status-line)) and backs up your settings first |
+| `tokenarmy init --agent copilot\|devin\|all [--global] [--wrap]` | Installs the hooks for [GitHub Copilot and Devin](#-github-copilot-and-devin) |
 | `tokenarmy statusline` | Renders the status line from Claude Code's JSON on stdin (used by `init --statusline`) |
 | `tokenarmy run -- <cmd>` | Runs any command and prints compressed output. Works with any agent |
 | `tokenarmy squeeze [file] --cmd "<cmd>"` | Compresses saved output or piped stdin |
@@ -307,7 +336,7 @@ Filter rules can never drop an error or failure line. Everything stays on your m
 
 ## 💪 Why TokenArmy
 
-1. **The command you approve is the command that runs.** TokenArmy never rewrites or wraps a command. It only shrinks the *output* after the command has run, never returns a permission decision, and if the hook ever fails the agent simply gets the original output.
+1. **The command you approve is the command that runs.** On Claude Code and Copilot, TokenArmy never rewrites or wraps a command. It only shrinks the *output* after the command has run, never returns a permission decision, and if the hook ever fails the agent simply gets the original output. (Devin's hooks can't change output, so there wrapping is opt-in with `--wrap`, and runs the identical command byte-for-byte.)
 2. **Nothing sits between you and the API.** Plain Claude Code hooks: no proxy, no network calls, no background process, no telemetry. Your traffic goes exactly where it went before.
 3. **It never hides an error.** Error, failure, panic, traceback and assertion lines survive every filter, built-in or learned. Items in JSON and rows in tables that mention a failure are always shown, even past the cut-off.
 4. **It knows when to back off.** If the agent already narrowed a command (`| tail -40`, `| grep`), no lines are cut. If the agent keeps opening the raw output of some command, TokenArmy stops compressing that command by itself.
@@ -324,6 +353,8 @@ Filter rules can never drop an error or failure line. Everything stays on your m
 - [x] Grep / search compression
 - [x] Local learning loop (auto-bypass, mined filters)
 - [x] Claude Code plugin
+- [x] GitHub Copilot (VS Code agent mode, Copilot CLI) and Devin (CLI, Desktop) hooks
+- [ ] Live check on the Copilot cloud coding agent (needs TokenArmy installed in its sandbox)
 - [x] `tokenarmy ab`: reproducible real-task benchmark
 - [ ] Publish to npm (`npm i -g tokenarmy`)
 - [ ] A/B results on more public projects (noisy builds, large monorepos, long sessions)

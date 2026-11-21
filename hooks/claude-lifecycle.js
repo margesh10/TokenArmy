@@ -13,6 +13,7 @@ const checkpoint = require('../src/checkpoint');
 const facts = require('../src/facts');
 const { redact } = require('../src/redact');
 const brief = require('../src/brief');
+const agents = require('../src/agents');
 const stats = require('../src/stats');
 const { estimateTokens } = require('../src/tokens');
 
@@ -24,8 +25,28 @@ function main(raw) {
   } catch {
     return;
   }
+  // Other agents: Copilot sends camelCase without an event name (we pass it: `--event sessionStart`);
+  // Devin uses Claude's event names plus PostCompaction. Normalise to Claude's shape.
+  const arg = (k) => {
+    const i = process.argv.indexOf(k);
+    return i > 0 ? process.argv[i + 1] : undefined;
+  };
+  const agent = agents.detect(evt, arg('--agent'));
+  if (!arg('--agent') && agent !== 'claude' && require('../src/install').hasDedicatedInstall(agent, evt.cwd)) return;
+  const EVENTS = { sessionStart: 'SessionStart', preCompact: 'PreCompact', PostCompaction: 'PostCompaction' };
+  const named = arg('--event') || evt.hook_event_name || evt.hookEventName;
+  evt = { ...evt, session_id: evt.session_id || evt.sessionId, hook_event_name: EVENTS[named] || named, transcript_path: evt.transcript_path || evt.transcriptPath, cwd: evt.cwd || process.cwd() };
   const sid = evt.session_id;
   if (!sid) return;
+  if (evt.hook_event_name === 'PostCompaction') {
+    session.remove(sid, 'reads.json');
+    return;
+  }
+  // Only Claude Code can hand context back after compaction; elsewhere a checkpoint would never be read.
+  if (agent !== 'claude' && evt.hook_event_name === 'PreCompact') {
+    session.remove(sid, 'reads.json');
+    return;
+  }
   // Whatever happens next, earlier reads may no longer be in context.
   session.remove(sid, 'reads.json');
   const checkpoints = process.env.TOKENARMY_CHECKPOINT !== '0';
@@ -58,7 +79,7 @@ function main(raw) {
       /* no checkpoint saved */
     }
   }
-  if (parts.length) process.stdout.write(JSON.stringify({ hookSpecificOutput: { hookEventName: 'SessionStart', additionalContext: parts.join('\n\n') } }));
+  if (parts.length) process.stdout.write(JSON.stringify(agents.contextReply(agent, 'SessionStart', parts.join('\n\n'))));
 }
 
 let buf = '';
